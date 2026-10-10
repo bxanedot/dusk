@@ -2,6 +2,17 @@
 
 All notable Dusk changes are documented here.
 
+## 1.8.19 - 2026-10-10
+
+Keep the native window responsive during account-scope migration and cloud-state synchronization.
+
+- Move legacy account-data copying off Tauri's window thread so large saves and screenshot folders do not block WebView2 input.
+- Move cloud account-state and playtime database import/export work to blocking workers.
+- Let saved guest sessions open the local library without waiting for an account-scope command; preserve ordering when guest mode is chosen during account initialization.
+- Extend the Windows Edge click-through test to cover a stalled guest-scope invocation.
+
+The Edge interaction test does not exercise the packaged WebView2 window or every Windows driver and input-device configuration.
+
 ## 1.8.18 - 2026-10-10
 
 Prevent an unresponsive main window during background imports and slow startup.

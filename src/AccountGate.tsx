@@ -84,12 +84,18 @@ export default function AccountGate(props: { children: ReactNode }) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const guestChoiceRef = useRef(false);
+  const accountScopeInitializationRef = useRef<Promise<void> | null>(null);
 
   useEffect(() => {
     void (async () => {
       try {
         if (localStorage.getItem("dusk-account-mode") === "guest") {
-          await api.setAccountScope(null);
+          // A fresh process starts in the unscoped local-library mode. Clear
+          // any stale scope asynchronously so a slow native command cannot
+          // keep the account gate over the whole application.
+          void api.setAccountScope(null).catch((error: unknown) => {
+            console.warn("Could not initialize guest account scope:", error);
+          });
           if (!guestChoiceRef.current) setGuest(true);
           return;
         }
@@ -106,7 +112,10 @@ export default function AccountGate(props: { children: ReactNode }) {
         });
         if (guestChoiceRef.current) return;
         if (existing) {
-          await api.setAccountScope(existing.user.id);
+          const scopeInitialization = api.setAccountScope(existing.user.id);
+          accountScopeInitializationRef.current = scopeInitialization;
+          await scopeInitialization;
+          if (guestChoiceRef.current) return;
           // Cloud hydration can be slow or never resolve on offline/filtered
           // networks. Do not make the entire main application unclickable
           // while waiting for an external service.
@@ -164,6 +173,10 @@ export default function AccountGate(props: { children: ReactNode }) {
     setMessage("");
     try {
       localStorage.setItem("dusk-account-mode", "guest");
+      // If a restored account was already selecting its local data directory,
+      // finish that transition first so the guest scope is always the last
+      // scope applied before mounting the library.
+      await accountScopeInitializationRef.current?.catch(() => undefined);
       await api.setAccountScope(null);
       setGuest(true);
       setChecking(false);

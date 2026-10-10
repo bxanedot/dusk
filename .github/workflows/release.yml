@@ -99,22 +99,20 @@ jobs:
           tagName: dusk-v__VERSION__
           releaseName: Dusk v__VERSION__
           releaseBody: |
-            # Dusk v1.8.18 — Fix unresponsive main-window controls
-            
-            ## Main-window interaction fixes
-            - Fixed a background game-import path that could open a blocking native confirmation dialog without a click. Downloaded installers are now reported as awaiting user approval instead of freezing the main UI.
-            - Removed blocking cloud account hydration from startup. The local app becomes usable while cloud data synchronizes.
-            - Added **Continue as guest** to the startup screen, even if an account check is slow or offline.
-            - Give a stalled library query a bounded timeout rather than leave the app permanently on a loading state.
-            - Added a **real Windows Edge click-through regression test** that exercises Home, Library, Favorites, Screenshots, Achievements and Settings and checks physical hit-testing against overlays.
-            - Corrected a stale background-download UI regression test.
-            
+            # Dusk v1.8.19 — Keep main-window controls responsive
+
+            ## Main-window responsiveness
+            - Run legacy account-data migration on Tauri's blocking worker pool so copying saves, screenshots and covers does not stop native window input.
+            - Run cloud account-state and playtime database imports and exports on blocking workers.
+            - Open saved guest sessions without waiting for the guest-scope command, and serialize the guest choice after any in-progress account-scope change.
+            - Keep the Windows Edge click-through test for Home, Library, Favorites, Screenshots, Achievements and Settings, including overlay hit-testing and a stalled guest-scope call.
+
             ## Download and extraction
-            - Keep the one-click multipart integrity checks, 150 GiB extraction preflight and archive-password handling from v1.8.17.
+            - Keep the background installer-approval fix, one-click multipart integrity checks, 150 GiB extraction preflight and archive-password handling from v1.8.18.
             - Automatic imports continue to require user approval before running extracted installers.
-            
+
             ## Limitations
-            - The browser interaction smoke test and packaged startup test cannot reproduce every WebView2/Windows driver configuration. Further reports should include the exact unresponsive screen and whether buttons respond to keyboard Tab/Enter.
+            - The Edge interaction test and packaged startup check do not verify mouse input in every native WebView2/Windows driver configuration. Further reports should include the exact unresponsive screen and whether buttons respond to keyboard Tab/Enter.
             - Direct file hosts returning 404 or requiring login/CAPTCHA still require a valid accessible download link or manual host interaction.
           releaseDraft: false
           prerelease: false

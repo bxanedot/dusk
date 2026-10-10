@@ -49,6 +49,9 @@ try {
       transformCallback: () => 1,
       unregisterCallback: () => {},
       invoke: async (command) => {
+        // Guest startup must not leave the account gate covering the app while
+        // a native account-scope command is slow or unavailable.
+        if (command === "set_account_scope") return await new Promise(() => {});
         if (command === "get_stats") return stats;
         if (command === "get_active_profile") return null;
         if (command === "refresh_missing_covers") return { updated: 0, attempted: 0, remaining: 0 };

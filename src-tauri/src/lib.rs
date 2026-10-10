@@ -5481,7 +5481,15 @@ fn migrate_legacy_data_to_account(app: &AppHandle, account_dir: &Path) -> Result
 }
 
 #[tauri::command]
-fn set_account_scope(app: AppHandle, account_user_id: Option<String>) -> Result<(), String> {
+async fn set_account_scope(app: AppHandle, account_user_id: Option<String>) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        set_account_scope_blocking(app, account_user_id)
+    })
+    .await
+    .map_err(|error| format!("Account scope worker failed: {error}"))?
+}
+
+fn set_account_scope_blocking(app: AppHandle, account_user_id: Option<String>) -> Result<(), String> {
     let normalized = match account_user_id {
         Some(value) => {
             let parsed = Uuid::parse_str(value.trim())
@@ -5522,7 +5530,13 @@ struct CloudPlaytimeUpload {
     sessions: Vec<CloudPlaytimeSession>,
 }
 #[tauri::command]
-fn export_playtime_updates(app: AppHandle) -> Result<CloudPlaytimeUpload, String> {
+async fn export_playtime_updates(app: AppHandle) -> Result<CloudPlaytimeUpload, String> {
+    tauri::async_runtime::spawn_blocking(move || export_playtime_updates_blocking(app))
+        .await
+        .map_err(|error| format!("Playtime export worker failed: {error}"))?
+}
+
+fn export_playtime_updates_blocking(app: AppHandle) -> Result<CloudPlaytimeUpload, String> {
     let db = open_database(&app)?;
     let device_id: String = match db.query_row("SELECT value FROM app_settings WHERE key='playtime_device_id'",[],|r|r.get(0)).optional().map_err(|e|e.to_string())? {
         Some(id) => id,
@@ -5547,7 +5561,13 @@ fn export_playtime_updates(app: AppHandle) -> Result<CloudPlaytimeUpload, String
     Ok(CloudPlaytimeUpload{baselines,sessions})
 }
 #[tauri::command]
-fn merge_cloud_playtime(app: AppHandle, totals: serde_json::Value) -> Result<(),String> {
+async fn merge_cloud_playtime(app: AppHandle, totals: serde_json::Value) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || merge_cloud_playtime_blocking(app, totals))
+        .await
+        .map_err(|error| format!("Playtime merge worker failed: {error}"))?
+}
+
+fn merge_cloud_playtime_blocking(app: AppHandle, totals: serde_json::Value) -> Result<(), String> {
     let mut db=open_database(&app)?;
     let tx=db.transaction().map_err(|e|e.to_string())?;
     if let Some(entries)=totals.as_array() {
@@ -5563,7 +5583,13 @@ fn merge_cloud_playtime(app: AppHandle, totals: serde_json::Value) -> Result<(),
 }
 
 #[tauri::command]
-fn export_account_state(app: AppHandle) -> Result<serde_json::Value, String> {
+async fn export_account_state(app: AppHandle) -> Result<serde_json::Value, String> {
+    tauri::async_runtime::spawn_blocking(move || export_account_state_blocking(app))
+        .await
+        .map_err(|error| format!("Account-state export worker failed: {error}"))?
+}
+
+fn export_account_state_blocking(app: AppHandle) -> Result<serde_json::Value, String> {
     let _ = list_achievements(app.clone())?;
     let connection = open_database(&app)?;
     let active_profile = active_profile_id(&connection)?;
@@ -5693,7 +5719,13 @@ fn export_account_state(app: AppHandle) -> Result<serde_json::Value, String> {
 }
 
 #[tauri::command]
-fn import_account_state(app: AppHandle, state: serde_json::Value) -> Result<(), String> {
+async fn import_account_state(app: AppHandle, state: serde_json::Value) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || import_account_state_blocking(app, state))
+        .await
+        .map_err(|error| format!("Account-state import worker failed: {error}"))?
+}
+
+fn import_account_state_blocking(app: AppHandle, state: serde_json::Value) -> Result<(), String> {
     let connection = open_database(&app)?;
     let transaction = connection
         .unchecked_transaction()
