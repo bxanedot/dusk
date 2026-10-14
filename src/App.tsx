@@ -1344,7 +1344,7 @@ export default function App() {
     return () => { mounted = false; };
   }, [vpnMode, vpnProfile]);
 
-  async function prepareBrowserVpn(): Promise<boolean> {
+  async function prepareDownloadVpn(): Promise<boolean> {
     if (vpnMode === "off") return true; // Explicitly chosen direct networking.
     try {
       const connection = await api.prepareWindowsVpn(vpnProfile || undefined);
@@ -1353,14 +1353,14 @@ export default function App() {
       if (connection.connected) return true;
       if (!vpnNoticeShownRef.current) {
         vpnNoticeShownRef.current = true;
-        showToast("VPN not connected. Download blocked to avoid using your normal connection. " + connection.message, "error");
+        showToast("Dusk's direct download is blocked until a VPN connects, or VPN mode is set to Off. " + connection.message, "error");
       }
       return false;
     } catch (error) {
       setVpnMessage("VPN connection check failed: " + readableError(error));
       if (!vpnNoticeShownRef.current) {
         vpnNoticeShownRef.current = true;
-        showToast("VPN unavailable. Download blocked; set VPN to Off to use your regular network.", "error");
+        showToast("Dusk's direct download is blocked because VPN status is unavailable. Set VPN mode to Off to allow direct downloads.", "error");
       }
       return false;
     }
@@ -2075,10 +2075,8 @@ export default function App() {
         const hostBlocked = /404|403|file host|web page|access denied|download mirror|archive/i.test(detail);
         if (item.listingUrl && hostBlocked) {
           showToast("No usable download mirror for " + item.title + ". Opening the original listing in Dusk. " + detail, "error");
-          void prepareBrowserVpn().then(connected => {
-            if (connected) return api.openGameSourceListing(item.listingUrl!);
-            return undefined;
-          }).catch(error => showToast("Could not open listing: " + readableError(error), "error"));
+          void api.openGameSourceListing(item.listingUrl!)
+            .catch(error => showToast("Could not open listing: " + readableError(error), "error"));
         } else {
           showToast("Download failed for " + item.title + ": " + detail, "error");
         }
@@ -2135,7 +2133,7 @@ export default function App() {
   }
 
   async function trackOnlineFixDownload(result: WebGameResult, externalBrowser = false, destination = result.url, autoSelect = false) {
-    if (!(await prepareBrowserVpn())) return;
+    if (autoSelect && !(await prepareDownloadVpn())) return;
     downloadStabilityRef.current.clear();
     watchAttemptedRef.current.clear();
     watchVerificationCheckedRef.current.clear();
@@ -2154,7 +2152,6 @@ export default function App() {
   }
 
   async function openOtherGameSource(result: WebGameResult, external = false) {
-    if (!(await prepareBrowserVpn())) return;
     // Browsing still happens on the real host. A completed, title-matching
     // archive is picked up and imported without a manual URL-paste form.
     downloadStabilityRef.current.clear();
@@ -2188,7 +2185,7 @@ export default function App() {
       await trackOnlineFixDownload(result, true, file.url);
       return;
     }
-    if (!(await prepareBrowserVpn())) return;
+    if (!(await prepareDownloadVpn())) return;
     try {
       const created = await api.startManagedDownload(file.url, file.filename, result.title, "online-fix");
       setManagedDownloads((current) => [created, ...current.filter((entry) => entry.id !== created.id)]);
@@ -2224,7 +2221,6 @@ export default function App() {
 
   async function selectGameDownload(result: WebGameResult) {
     if (downloadSourcesBusy) return;
-    if (!(await prepareBrowserVpn())) return;
     setDownloadSourcesBusy(result.url);
     try {
       const links = await api.getOnlineFixDownloadLinks(result.url);
@@ -2238,6 +2234,7 @@ export default function App() {
           setHosterFiles((current) => ({ ...current, [result.url]: files }));
           const multipart = findHosterMultipartBundle(files);
           if (multipart) {
+            if (!(await prepareDownloadVpn())) return;
             const created = await api.startArchiveBundle(result.title, multipart, undefined, "online-fix");
             setManagedDownloads(current => [created, ...current.filter(item => item.id !== created.id)]);
             showToast("Downloading " + multipart.length + " archive volumes with automatic mirror fallback.");
@@ -2276,7 +2273,7 @@ export default function App() {
   // URLs for the same volume are mirrors; numbered volumes are all required.
   async function oneClickGameSourceDownload(result: WebGameResult) {
     if (downloadSourcesBusy || webSource === "online-fix") return;
-    if (!(await prepareBrowserVpn())) return;
+    if (!(await prepareDownloadVpn())) return;
     const source = webSource;
     setDownloadSourcesBusy(result.url);
     try {
@@ -2763,7 +2760,7 @@ export default function App() {
                   <p>{webError}</p>
                   {webSource !== "online-fix" && (
                     <button className="button secondary" onClick={() => {
-                      void prepareBrowserVpn().then(connected => connected ? api.openGameSourceSearch(webSource, query.trim()) : undefined)
+                      void api.openGameSourceSearch(webSource, query.trim())
                         .catch(error => showToast(readableError(error), "error"));
                     }} title="Open this search in Dusk's embedded browser with its ad blocker enabled">
                       <Globe2 size={15} /> Open search in Dusk browser
@@ -3298,7 +3295,7 @@ export default function App() {
                     <div className="setting-row">
                       <div>
                         <strong>Connection mode</strong>
-                        <span>Automatic is the default. Dusk checks the real VPN connection before browsing and downloading; without a connection, network requests are blocked until you connect or choose Off.</span>
+                        <span>Searches and game pages use your current connection. Automatic checks for a VPN before Dusk starts direct archive downloads; without one, those downloads are blocked until you connect or choose Off.</span>
                       </div>
                       <select className="vpn-settings-select" value={vpnMode} aria-label="VPN connection mode"
                         onChange={event => {
