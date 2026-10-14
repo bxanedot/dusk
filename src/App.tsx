@@ -212,11 +212,14 @@ function NavItem(props: {
 }
 
 function Cover({ game }: { game: GameRecord }) {
-  if (game.coverPath) {
+  const imageSource = game.coverDataUrl || (game.coverPath ? convertFileSrc(game.coverPath) : null);
+  const [failedSource, setFailedSource] = useState<string | null>(null);
+  if (imageSource && imageSource !== failedSource) {
     return (
       <div className="cover">
         <img
-          src={convertFileSrc(game.coverPath)}
+          src={imageSource}
+          onError={() => setFailedSource(imageSource)}
           alt=""
           loading="lazy"
           decoding="async"
@@ -262,15 +265,12 @@ function GameCard(props: {
     <article
       className="game-card"
       data-controller-game-id={props.game.id}
-      role="button"
-      tabIndex={0}
-      onClick={props.onOpen}
-      onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") props.onOpen();
-      }}
     >
       <div className="game-art">
-        <Cover game={props.game} />
+        <button className="game-details-button" onClick={props.onOpen} aria-label={"Details for " + props.game.title}>
+          <Cover game={props.game} />
+          <span>Game details</span>
+        </button>
         <div className="game-overlay">
           <button
             className="round-action primary"
@@ -283,7 +283,8 @@ function GameCard(props: {
           <button
             className={cx("round-action", props.game.favorite && "selected")}
             onClick={favorite}
-            aria-label={props.game.favorite ? "Remove favorite" : "Add favorite"}
+            aria-label={(props.game.favorite ? "Remove favorite: " : "Add favorite: ") + props.game.title}
+            aria-pressed={props.game.favorite}
           >
             <Star size={17} fill={props.game.favorite ? "currentColor" : "none"} />
           </button>
@@ -419,6 +420,7 @@ function AddGameModal(props: {
 function GameDetail(props: {
   game: GameRecord;
   activeProfile: ProfileRecord | null;
+  playing: boolean;
   collections: CollectionRecord[];
   memberships: CollectionMembership[];
   onClose: () => void;
@@ -700,13 +702,12 @@ function GameDetail(props: {
   }
 
   return (
-    <div className="detail-backdrop" onMouseDown={props.onClose}>
-      <aside className="detail-panel" onMouseDown={(event) => event.stopPropagation()}>
+    <div className="game-workspace">
+      <section className="detail-panel" aria-label={props.game.title + " game workspace"}>
+        <button className="button secondary workspace-back" autoFocus onClick={props.onClose}>Back to overview</button>
         <div className="detail-art">
           <Cover game={props.game} />
-          <button className="icon-button detail-close" onClick={props.onClose}>
-            <X size={19} />
-          </button>
+
         </div>
 
         <div className="detail-body">
@@ -717,9 +718,9 @@ function GameDetail(props: {
             {props.game.launchCount === 1 ? "session" : "sessions"}
           </p>
 
-          <button className="button primary wide" onClick={() => props.onPlay(props.game)}>
+          <button className="button primary wide" disabled={props.playing} onClick={() => props.onPlay(props.game)}>
             <Play size={17} fill="currentColor" />
-            Play
+            {props.playing ? "Launching…" : "Play"}
           </button>
 
           <div className="detail-actions">
@@ -992,7 +993,7 @@ function GameDetail(props: {
             </button>
           </div>
         </div>
-      </aside>
+      </section>
     </div>
   );
 }
@@ -1572,7 +1573,7 @@ export default function App() {
       if (enabled) {
         window.setTimeout(() => {
           const first = document.querySelector<HTMLElement>(
-            '.game-card, .nav-item, button:not(:disabled)',
+            '.game-card button:not(:disabled), .nav-item, button:not(:disabled)',
           );
           first?.focus();
         }, 180);
@@ -1585,12 +1586,12 @@ export default function App() {
   }
 
   function controllerBack() {
-    if (selectedGameId) {
-      setSelectedGameId(null);
-      return;
-    }
     if (addOpen) {
       setAddOpen(false);
+      return;
+    }
+    if (selectedGameId) {
+      setSelectedGameId(null);
       return;
     }
     if (view !== "home") {
@@ -1620,7 +1621,7 @@ export default function App() {
       if (event.key === "F11") {
         event.preventDefault();
         void setConsoleModeEnabled(!consoleMode);
-      } else if (event.key === "Escape" && consoleMode) {
+      } else if (event.key === "Escape" && (consoleMode || selectedGameId || addOpen)) {
         event.preventDefault();
         controllerBack();
       }
@@ -2703,6 +2704,27 @@ export default function App() {
         </header>
 
         <div className="content">
+          {selectedGame && (
+        <GameDetail
+          key={selectedGame.id}
+          game={selectedGame}
+          playing={playingId === selectedGame.id}
+          activeProfile={activeProfile}
+          collections={collections}
+          memberships={memberships}
+          onClose={() => setSelectedGameId(null)}
+          onPlay={play}
+          onRefresh={() => refreshCore(false)}
+          onToast={showToast}
+          onSearchCatalog={searchTrainerCatalog}
+          onBrowseCatalog={() => {
+            setView("trainerCatalog");
+            setWebSearched(false);
+            void loadTrainerCatalog().catch(() => {});
+          }}
+        />
+      )}
+          <div hidden={Boolean(selectedGame)} className="destination-content">
           {loading ? (
             <div className="loading-screen">
               <div className="brand-mark">
@@ -3737,6 +3759,7 @@ export default function App() {
               )}
             </>
           )}
+          </div>
         </div>
       </main>
 
@@ -3747,24 +3770,6 @@ export default function App() {
         />
       )}
 
-      {selectedGame && (
-        <GameDetail
-          game={selectedGame}
-          activeProfile={activeProfile}
-          collections={collections}
-          memberships={memberships}
-          onClose={() => setSelectedGameId(null)}
-          onPlay={play}
-          onRefresh={() => refreshCore(false)}
-          onToast={showToast}
-          onSearchCatalog={searchTrainerCatalog}
-          onBrowseCatalog={() => {
-            setView("trainerCatalog");
-            setWebSearched(false);
-            void loadTrainerCatalog().catch(() => {});
-          }}
-        />
-      )}
 
       {controllerConnected && (
         <div className="controller-bar" aria-live="polite">

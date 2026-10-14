@@ -2944,3 +2944,28 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
   .launcher-shell .topbar { flex-wrap: wrap; padding: 10px 18px; }
   .launcher-shell .search-controls { flex: 1 1 300px; }
 }
+.launcher-shell { --accent-soft: rgba(var(--accent-rgb), 0.12); }
+.launcher-shell .game-grid, .launcher-shell .game-grid.large { grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 18px; }
+.launcher-shell .game-card { padding: 0; border: 1px solid var(--border); background: var(--surface); overflow: hidden; border-radius: 8px; cursor: default; }
+.launcher-shell .game-art { border-radius: 0; aspect-ratio: 4 / 5; overflow: visible; }
+.game-details-button { display: block; width: 100%; height: 100%; padding: 0; background: var(--surface-2); border: 0; cursor: pointer; text-align: left; position: relative; }
+.game-details-button > span { position: absolute; inset: auto 0 0; padding: 13px 12px; background: var(--surface-2); font-size: 12px; font-weight: 600; }
+.launcher-shell .game-overlay { position: static; opacity: 1; transform: none; padding: 9px 10px; background: var(--surface); justify-content: space-between; }
+.launcher-shell .game-art { margin-bottom: 53px; }
+.launcher-shell .round-action { border-radius: 5px; backdrop-filter: none; background: var(--surface-2); }
+.launcher-shell .round-action.primary { background: var(--accent); width: 70px; }
+.launcher-shell .game-card-copy { padding: 10px 12px 15px; }
+.launcher-shell .game-meta { font-size: 11px; color: var(--muted); flex-wrap: wrap; }
+.launcher-shell .game-card-copy strong { font-size: 13px; }
+.game-workspace { padding: 24px; }
+.launcher-shell .game-workspace .detail-panel { position: relative; width: 100%; height: auto; overflow: visible; border: 1px solid var(--border); border-radius: 10px; box-shadow: none; display: grid; grid-template-columns: 200px minmax(0, 1fr); align-items: start; padding: 24px; gap: 24px; }
+.workspace-back { grid-column: 1 / -1; justify-self: start; }
+.launcher-shell .game-workspace .detail-art { height: 280px; border: 1px solid var(--border); border-radius: 8px; }
+.launcher-shell .game-workspace .detail-body { padding: 0; min-width: 0; }
+.launcher-shell .detail-body > h2 { font-size: clamp(26px, 3vw, 40px); margin-top: 12px; }
+.launcher-shell .detail-body > .button.primary { width: min(280px, 100%); min-height: 46px; margin-bottom: 16px; }
+.launcher-shell .detail-actions { flex-wrap: wrap; }
+@media (max-width: 1250px) {
+  .launcher-shell .game-workspace .detail-panel { grid-template-columns: 150px minmax(0, 1fr); padding: 20px; gap: 20px; }
+  .launcher-shell .game-workspace .detail-art { height: 220px; }
+}
