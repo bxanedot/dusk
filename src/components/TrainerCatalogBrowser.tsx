@@ -12,13 +12,14 @@ type TrainerCatalogBrowserProps = {
   page: number;
   pageSize?: number;
   errorMessage: string | null;
+  onSelectGame: (result: TrainerCatalogResult) => void;
   onQueryChange: (query: string) => void;
   onStatusFilterChange: (filter: TrainerCatalogStatusFilter) => void;
   onRetry: () => void;
   onPageChange: (page: number) => void;
 };
 
-function normalizeCatalogText(value: string): string {
+export function normalizeCatalogText(value: string): string {
   return value
     .normalize("NFD")
     .replace(/\p{M}/gu, "")
@@ -92,7 +93,7 @@ export function TrainerCatalogBrowser(props: TrainerCatalogBrowserProps) {
         <div>
           <span className="eyebrow">Browse</span>
           <h1>Dusk Catalog</h1>
-          <p>Search title and platform coverage in Dusk's offline snapshot. Import a local table from game details to use numeric values.</p>
+          <p>Select a title to open its game details. Add or scan the game in Dusk's library first to reach its local trainer controls.</p>
         </div>
         {props.state === "ready" && (
           <div className="trainer-catalog-total" aria-label={`${props.results.length} catalog entries`}>
@@ -173,7 +174,14 @@ export function TrainerCatalogBrowser(props: TrainerCatalogBrowserProps) {
               ].filter((part): part is string => Boolean(part));
 
               return (
-                <article className="trainer-catalog-card" key={`${result.title}:${index}`}>
+                <button
+                  type="button"
+                  className="trainer-catalog-card"
+                  key={`${result.title}:${index}`}
+                  onClick={() => props.onSelectGame(result)}
+                  aria-label={`Open ${result.title} in your Dusk library`}
+                  title={`Open ${result.title} in your Dusk library`}
+                >
                   <span className="trainer-catalog-card-icon" aria-hidden="true"><Gamepad2 size={19} /></span>
                   <div className="trainer-catalog-card-body">
                     <div className="trainer-catalog-card-title">
@@ -184,7 +192,7 @@ export function TrainerCatalogBrowser(props: TrainerCatalogBrowserProps) {
                       {metadata.length > 0 ? metadata.join(" · ") : "Details not available"}
                     </div>
                   </div>
-                </article>
+                </button>
               );
             })}
           </div>

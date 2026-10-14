@@ -948,7 +948,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
 .trainer-catalog-status-filter select { min-width: 118px; border: 0; outline: 0; color: var(--text); background: transparent; font-size: 11px; }
 .trainer-catalog-result-count { min-width: 80px; color: var(--muted); font-size: 11px; text-align: right; }
 .trainer-catalog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 10px; }
-.trainer-catalog-card { display: flex; min-width: 0; min-height: 150px; gap: 12px; padding: 15px; border: 1px solid var(--border); border-radius: 14px; background: linear-gradient(145deg, var(--surface-2), var(--surface)); transition: border-color 140ms ease, transform 140ms ease, background 140ms ease; }
+.trainer-catalog-card { display: flex; width: 100%; min-width: 0; min-height: 150px; gap: 12px; padding: 15px; border: 1px solid var(--border); border-radius: 14px; color: var(--text); background: linear-gradient(145deg, var(--surface-2), var(--surface)); cursor: pointer; text-align: left; transition: border-color 140ms ease, transform 140ms ease, background 140ms ease; }
 .trainer-catalog-card:hover { transform: translateY(-1px); border-color: var(--border-strong); background: linear-gradient(145deg, var(--surface-3), var(--surface)); }
 .trainer-catalog-card-icon { display: grid; width: 38px; height: 38px; flex: 0 0 auto; place-items: center; border: 1px solid rgba(var(--accent-rgb), 0.24); border-radius: 11px; color: var(--accent); background: rgba(var(--accent-rgb), 0.1); }
 .trainer-catalog-card-body { display: grid; min-width: 0; flex: 1; align-content: start; gap: 9px; }

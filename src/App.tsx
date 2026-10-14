@@ -55,6 +55,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   TrainerCatalogBrowser,
   filterTrainerCatalogResults,
+  normalizeCatalogText,
   type TrainerCatalogBrowserState,
   type TrainerCatalogStatusFilter,
 } from "./components/TrainerCatalogBrowser";
@@ -1132,6 +1133,22 @@ export default function App() {
       toastTimerRef.current = null;
     }, 3600);
   }, []);
+
+  function openCatalogGame(result: TrainerCatalogResult) {
+    const catalogTitles = new Set([result.title, ...(result.aliases ?? [])].map(normalizeCatalogText));
+    const matchingGames = games.filter((game) => catalogTitles.has(normalizeCatalogText(game.title)));
+    const exactTitleMatch = matchingGames.find((game) => normalizeCatalogText(game.title) === normalizeCatalogText(result.title));
+    const game = exactTitleMatch ?? (matchingGames.length === 1 ? matchingGames[0] : null);
+    if (game) {
+      setSelectedGameId(game.id);
+      return;
+    }
+    if (matchingGames.length > 1) {
+      showToast(`More than one library entry matches ${result.title}. Open it from Library to choose the right installation.`, "error");
+      return;
+    }
+    showToast(`${result.title} is in Dusk Catalog. Add or scan it in your library, then select this card to open its trainer controls.`, "error");
+  }
 
   async function loadTrainerCatalog(force = false): Promise<TrainerCatalogResult[]> {
     if (trainerCatalogEntriesRef.current && !force) {
@@ -2865,6 +2882,7 @@ export default function App() {
                   statusFilter={trainerCatalogStatusFilter}
                   page={trainerCatalogPage}
                   errorMessage={trainerCatalogError}
+                  onSelectGame={openCatalogGame}
                   onQueryChange={(nextQuery) => {
                     setTrainerCatalogQuery(nextQuery);
                     setTrainerCatalogPage(1);

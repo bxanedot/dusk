@@ -10,11 +10,13 @@ $uiAssetsDir = Join-Path $root "src\assets"
 New-Item -ItemType Directory -Force -Path $iconsDir, $installerDir, $uiAssetsDir | Out-Null
 
 $sourcePoints = @(
-  @(263,76), @(211,91), @(160,132), @(134,179), @(127,246),
-  @(147,307), @(181,348), @(231,378), @(293,386), @(327,378),
-  @(363,358), @(393,328), @(412,295), @(372,319), @(316,324),
-  @(271,309), @(227,271), @(205,224), @(204,170), @(234,111),
-  @(283,77)
+  @(365,48), @(307,53), @(252,78), @(210,119), @(174,165),
+  @(151,220), @(145,278), @(156,330), @(181,376), @(218,411),
+  @(262,437), @(310,449), @(358,446), @(400,427), @(430,402),
+  @(447,378), @(421,389), @(393,395), @(363,397), @(333,391),
+  @(305,381), @(278,365), @(253,344), @(232,319), @(215,290),
+  @(202,258), @(198,224), @(200,190), @(208,157), @(222,127),
+  @(242,99), @(265,76), @(291,59), @(322,48)
 )
 
 function New-Canvas([int]$width, [int]$height, [bool]$alpha = $true) {
@@ -34,10 +36,10 @@ function Configure-Graphics([System.Drawing.Graphics]$graphics) {
 }
 
 function New-CrescentPath([System.Drawing.RectangleF]$bounds) {
-  [float]$minX = 127
-  [float]$maxX = 412
-  [float]$minY = 76
-  [float]$maxY = 386
+  [float]$minX = 68
+  [float]$maxX = 455
+  [float]$minY = 35
+  [float]$maxY = 455
   [float]$sourceW = $maxX - $minX
   [float]$sourceH = $maxY - $minY
   [float]$scale = [Math]::Min($bounds.Width / $sourceW, $bounds.Height / $sourceH)
@@ -58,6 +60,30 @@ function New-CrescentPath([System.Drawing.RectangleF]$bounds) {
   return $path
 }
 
+function New-SparklePath([System.Drawing.RectangleF]$bounds) {
+  [float]$minX = 68
+  [float]$maxX = 455
+  [float]$minY = 35
+  [float]$maxY = 455
+  [float]$sourceW = $maxX - $minX
+  [float]$sourceH = $maxY - $minY
+  [float]$scale = [Math]::Min($bounds.Width / $sourceW, $bounds.Height / $sourceH)
+  [float]$drawW = $sourceW * $scale
+  [float]$drawH = $sourceH * $scale
+  [float]$offsetX = $bounds.X + (($bounds.Width - $drawW) / 2)
+  [float]$offsetY = $bounds.Y + (($bounds.Height - $drawH) / 2)
+  $star = @(@(412,106), @(418,126), @(448,141), @(418,157), @(412,178), @(406,157), @(376,141), @(406,126))
+  $points = New-Object 'System.Collections.Generic.List[System.Drawing.PointF]'
+  foreach ($pair in $star) {
+    [float]$x = $offsetX + (($pair[0] - $minX) * $scale)
+    [float]$y = $offsetY + (($pair[1] - $minY) * $scale)
+    $points.Add([System.Drawing.PointF]::new($x, $y))
+  }
+  $path = [System.Drawing.Drawing2D.GraphicsPath]::new()
+  $path.AddPolygon($points.ToArray())
+  return $path
+}
+
 function Draw-Crescent(
   [System.Drawing.Graphics]$graphics,
   [System.Drawing.RectangleF]$bounds,
@@ -66,11 +92,27 @@ function Draw-Crescent(
 ) {
   Configure-Graphics $graphics
   $path = New-CrescentPath $bounds
+  $sparkle = New-SparklePath $bounds
   $brush = [System.Drawing.Drawing2D.LinearGradientBrush]::new($bounds, $start, $end, 45.0)
+  [float]$minX = 68
+  [float]$maxX = 455
+  [float]$minY = 35
+  [float]$maxY = 455
+  [float]$scale = [Math]::Min($bounds.Width / ($maxX - $minX), $bounds.Height / ($maxY - $minY))
+  [float]$drawW = ($maxX - $minX) * $scale
+  [float]$drawH = ($maxY - $minY) * $scale
+  [float]$offsetX = $bounds.X + (($bounds.Width - $drawW) / 2)
+  [float]$offsetY = $bounds.Y + (($bounds.Height - $drawH) / 2)
+  [float]$dotX = $offsetX + ((373 - $minX) * $scale)
+  [float]$dotY = $offsetY + ((190 - $minY) * $scale)
+  [float]$dotRadius = 6 * $scale
   try {
     $graphics.FillPath($brush, $path)
+    $graphics.FillPath($brush, $sparkle)
+    $graphics.FillEllipse($brush, $dotX - $dotRadius, $dotY - $dotRadius, 2 * $dotRadius, 2 * $dotRadius)
   } finally {
     $brush.Dispose()
+    $sparkle.Dispose()
     $path.Dispose()
   }
 }
