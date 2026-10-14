@@ -1,6 +1,6 @@
 # Dusk Launcher UI Redesign
 
-**Status:** awaiting user review
+**Status:** approved; Glass UI excluded by the user
 **Date:** 2026-10-14
 
 ## Goal
@@ -13,7 +13,6 @@ Give Dusk a cohesive, game-first desktop launcher layout, using the spatial hier
 - Local games and their launch actions are real user data. Never seed example games, playtime, screenshots, or achievements.
 - Session time is tracked only when Dusk can observe the launched game process. Guest data remains local; signed-in account sync remains optional.
 - Preserve Dusk's crescent logo, dark visual identity, Night/OLED/Slate themes, Violet/Ember/Cyan accents, controller navigation, custom window controls, and existing feature behavior.
-- Add an optional Glass UI appearance preference, off by default to preserve the current look. When enabled, all Dusk buttons use the same glass material treatment across every screen and button state.
 - Keep all existing screens and settings available. This work changes presentation and navigation, not the Catalog/search services or game-tracking rules.
 - Do not use third-party logos, game artwork, brand names, or copied interface assets in Dusk's UI. The Battle.net desktop launcher is a spatial reference only: [official desktop launcher overview](https://download.battle.net/en-us/desktop).
 - The desktop window currently targets a minimum width of about 1100 px and height of 700 px.
@@ -60,13 +59,12 @@ The user approved approach 1: compact Dusk navigation, a distinct rail for the u
 
 ### Settings
 
-Keep Settings in the persistent Dusk navigation rail. Replace the long, dense presentation with a readable settings workspace and a stable section navigator. Preserve all existing controls and group them under Account, Profiles & Saves, Appearance, Game Detection, Installers, Updates, Local Data, Console Mode, and Discord Rich Presence. Add a Glass UI toggle under Appearance; store it as a local preference and keep it off by default. Maintain current scope, persistence, account/logout behavior, and update flows. Target readable body copy and clear labels; avoid tiny text and controls that depend only on hover.
+Keep Settings in the persistent Dusk navigation rail. Replace the long, dense presentation with a readable settings workspace and a stable section navigator. Preserve all existing controls and group them under Account, Profiles & Saves, Appearance, Game Detection, Installers, Updates, Local Data, Console Mode, and Discord Rich Presence. Maintain current scope, persistence, account/logout behavior, and update flows. Target readable body copy and clear labels; avoid tiny text and controls that depend only on hover.
 
 ## Visual direction
 
 - Use a strong launcher composition: a narrow global rail, a distinct game list, and a broad content canvas with clear title, context, and primary action.
 - Retain Dusk's near-black graphite surfaces, crescent logo, and user-selected accent. Apply accents to selection, focus, and primary actions rather than recoloring every surface.
-- Glass UI is an optional visual mode. When enabled, every Dusk button—including navigation, primary/secondary actions, cards, Settings, and custom window controls—uses a consistent translucent surface, border, blur, and readable text treatment. Define default, hover, focus, pressed, disabled, and selected states for the full button set; theme and accent choices continue to affect the glass tint. Leave Glass UI off by default.
 - Use existing user/local game cover art only where available. Fall back to Dusk's own neutral game icon treatment when cover art is missing.
 - Improve type hierarchy and contrast for headings, section labels, metadata, and helper copy. Existing settings copy as small as 9–10 px should be brought to a comfortable readable scale.
 - Keep layout density appropriate for a Windows desktop and preserve custom title-bar controls. Avoid copying another product's naming, logos, art, proprietary game taxonomy, or exact screen composition.
@@ -75,7 +73,6 @@ Keep Settings in the persistent Dusk navigation rail. Replace the long, dense pr
 
 - Every navigation item, game row, card action, and Settings control must work with pointer, keyboard, and controller navigation where Dusk currently supports it.
 - Selected location, selected game, focus, disabled state, and availability must be visually distinct. Important actions, especially Play, cannot appear only on hover.
-- In Glass UI mode, all buttons use the glass treatment in every state; keyboard/controller focus and disabled/pressed states remain easy to distinguish and text contrast remains readable.
 - Provide consistent loading, empty, offline, and error states without blocking access to the rest of the launcher. Keep actionable recovery paths near the message.
 - Keep local game search separate from optional Web search. Preserve existing source labels and avoid describing unverified catalog results as locally installed content.
 - Respect the user's selected theme and accent, text scaling expectations, and Windows window size. The game rail should collapse when the available content width is constrained.
@@ -85,14 +82,13 @@ Keep Settings in the persistent Dusk navigation rail. Replace the long, dense pr
 - The shell owns global navigation, title-bar integration, search/actions, and the collapsible game rail.
 - Destination pages own their existing page-specific controls and data queries; the redesign should avoid duplicating game or account state.
 - The selected game workspace reuses current game-detail operations and the existing SQLite/API boundaries. It must not introduce a second game inventory or alter tracking semantics.
-- Theme, accent, Glass UI, controller, account, and local-first preferences continue to flow through their current settings/state mechanisms. Store the new Glass UI boolean in local storage under `dusk-glass-ui`, defaulting to `false`.
+- Theme, accent, controller, account, and local-first preferences continue to flow through their current settings/state mechanisms.
 
 ## Error handling and non-goals
 
 - A missing cover, empty library, offline Catalog source, unavailable web source, or failed scan should not break shell navigation.
 - Native Tauri actions remain unavailable in a plain browser preview; the final visual pass must use the Windows/Tauri runtime for native actions and window behavior.
 - No new game-data source, trainer/search provider, statistics calculation, tracking behavior, account flow, or installer behavior is included.
-- Glass UI is the only new preference in this work; no other service or game-data behavior is added.
 - No Dusk logo redesign or feature removal is part of this work.
 
 ## Review and implementation criteria
@@ -107,7 +103,6 @@ The redesign is ready when:
 6. Settings content is organized, readable, and uses the same Dusk shell.
 7. Empty, loading, offline, and error states preserve navigation and show recovery actions.
 8. The final UI is reviewed in the native Windows/Tauri runtime at the supported minimum size and a typical desktop size. A source/build check may confirm integration; no new automated tests are required by this design.
-9. With Glass UI off, Dusk retains its current appearance. With Glass UI on, every button across all screens has consistent glass default, hover, focus, pressed, disabled, and selected states in all themes and accents.
 
 ## Assessment limits
 
