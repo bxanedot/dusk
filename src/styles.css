@@ -2969,3 +2969,34 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
   .launcher-shell .game-workspace .detail-panel { grid-template-columns: 150px minmax(0, 1fr); padding: 20px; gap: 20px; }
   .launcher-shell .game-workspace .detail-art { height: 220px; }
 }
+.launcher-shell .page { padding: 28px 28px 48px; }
+.launcher-shell .page-heading { padding-bottom: 20px; border-bottom: 1px solid var(--border); align-items: center; flex-wrap: wrap; }
+.launcher-shell .page-heading h1 { font-size: 30px; }
+.launcher-shell .page-heading p, .launcher-shell .empty-state p { font-size: 13px; line-height: 1.65; }
+.launcher-shell .eyebrow { font-size: 11px; letter-spacing: .1em; }
+.launcher-shell .home-hero { display: block; padding: 0; border-radius: 10px; background: var(--surface); }
+.launcher-shell .home-hero-main { min-height: 320px; border: 0; border-radius: 0; }
+.launcher-shell .home-hero-copy { padding: 36px; }
+.launcher-shell .home-hero-copy h1 { max-width: 620px; font-size: clamp(30px, 3.4vw, 48px); line-height: 1.1; }
+.launcher-shell .home-hero-copy p { font-size: 14px; }
+.launcher-shell .home-hero .hero-stat { border: 0; border-top: 1px solid var(--border); border-radius: 0; padding: 14px 24px; display: flex; align-items: center; gap: 15px; }
+.launcher-shell .home-hero .hero-stat strong { font-size: 20px; }
+.launcher-shell .home-hero .hero-stat small { margin-left: auto; max-width: 50%; text-align: right; }
+.launcher-shell .stat-grid { margin-top: 30px; }
+.launcher-shell .stat-card { border-radius: 6px; grid-template-columns: 22px minmax(0,1fr); }
+.launcher-shell .stat-card strong { grid-column: 2; }
+.launcher-shell .button { border-radius: 5px; min-height: 38px; font-size: 12px; }
+.launcher-shell .hero-actions .button.primary { min-width: 140px; min-height: 44px; }
+.launcher-shell .text-action { font-size: 12px; }
+.launcher-shell .section-heading h2 { font-size: 22px; }
+.launcher-shell .empty-state { border-radius: 8px; background: var(--surface); }
+.launcher-shell .web-result-card, .launcher-shell .achievement-card, .launcher-shell .screenshot-card, .launcher-shell .trainer-catalog-card { border-radius: 8px; background: var(--surface); }
+.launcher-shell .web-result-card { gap: 16px; }
+.launcher-shell .web-result-card h3 { font-size: 16px; }
+.launcher-shell .web-result-card p { font-size: 13px; line-height: 1.6; }
+.launcher-shell .library-controls select { border-radius: 5px; font-size: 12px; }
+.launcher-shell .search-box { border-radius: 5px; }
+.launcher-shell .search-box input { font-size: 13px; }
+@media (prefers-reduced-motion: reduce) {
+  .launcher-shell *, .launcher-shell *::before, .launcher-shell *::after { scroll-behavior: auto !important; transition: none !important; animation-duration: .01ms !important; }
+}

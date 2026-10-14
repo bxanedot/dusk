@@ -2637,6 +2637,7 @@ export default function App() {
                 onFocus={() => {
                   if (!webSearchEnabled && view === "home") setView("library");
                 }}
+                aria-label={webSearchEnabled ? "Search the web for games" : "Search your local games"}
                 placeholder={webSearchEnabled ? `Search ${WEB_SOURCES[webSource].label} (Enter)` : "Search your games"}
                 aria-label={webSearchEnabled ? "Web search query" : "Search your games"}
               />
@@ -2930,6 +2931,10 @@ export default function App() {
                                 Game details
                               </button>
                             </>
+                          ) : games.length > 0 ? (
+                            <button className="button primary" onClick={() => { setView("library"); setCollectionFilter("all"); }}>
+                              <Library size={16} /> Open your library
+                            </button>
                           ) : (
                             <>
                               <button className="button primary" onClick={() => void scan()} disabled={scanning}>
@@ -2963,34 +2968,11 @@ export default function App() {
                     </div>
                   </section>
 
-                  <section className="stat-grid">
-                    <div className="stat-card">
-                      <Library size={18} />
-                      <span>Games</span>
-                      <strong>{stats.gameCount}</strong>
-                    </div>
-                    <div className="stat-card">
-                      <Clock3 size={18} />
-                      <span>Last 7 days</span>
-                      <strong>{formatDuration(stats.last7DaysSeconds)}</strong>
-                    </div>
-                    <div className="stat-card">
-                      <Play size={18} />
-                      <span>Tracked sessions</span>
-                      <strong>{stats.launchCount}</strong>
-                    </div>
-                    <div className="stat-card">
-                      <Images size={18} />
-                      <span>Screenshots</span>
-                      <strong>{stats.screenshotCount}</strong>
-                    </div>
-                  </section>
-
                   <section className="content-section">
                     <div className="section-heading">
                       <div>
                         <span className="eyebrow">Continue</span>
-                        <h2>Recently played</h2>
+                        <h2>{recentGames.length ? "Recently played" : "Your library"}</h2>
                       </div>
                       <button
                         className="text-action"
@@ -3003,7 +2985,7 @@ export default function App() {
                       </button>
                     </div>
 
-                    {recentGames.length === 0 ? (
+                    {games.length === 0 ? (
                       <EmptyState
                         icon={<Gamepad2 size={24} />}
                         title="No tracked sessions yet"
@@ -3016,7 +2998,7 @@ export default function App() {
                       />
                     ) : (
                       <div className="game-grid">
-                        {recentGames.map((game) => (
+                        {(recentGames.length ? recentGames : games.slice(0, 6)).map((game) => (
                           <GameCard
                             key={game.id}
                             game={game}
@@ -3052,6 +3034,29 @@ export default function App() {
                       </div>
                     </section>
                   )}
+                  <section className="stat-grid">
+                    <div className="stat-card">
+                      <Library size={18} />
+                      <span>Games</span>
+                      <strong>{stats.gameCount}</strong>
+                    </div>
+                    <div className="stat-card">
+                      <Clock3 size={18} />
+                      <span>Last 7 days</span>
+                      <strong>{formatDuration(stats.last7DaysSeconds)}</strong>
+                    </div>
+                    <div className="stat-card">
+                      <Play size={18} />
+                      <span>Tracked sessions</span>
+                      <strong>{stats.launchCount}</strong>
+                    </div>
+                    <div className="stat-card">
+                      <Images size={18} />
+                      <span>Screenshots</span>
+                      <strong>{stats.screenshotCount}</strong>
+                    </div>
+                  </section>
+
                 </div>
               )}
 
