@@ -2998,6 +2998,28 @@ fn trainer_catalog_text(fragment: &str) -> String {
     decoded.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
+fn trainer_catalog_cheat_count(cell: &str) -> Option<u32> {
+    let count_re = Regex::new(
+        r#"(?s)<span class="(?:desktop|mobile)">\s*([0-9][0-9,]*)\s*(?:cheats?)?\s*</span>"#,
+    )
+    .expect("constant regex");
+    if let Some(captures) = count_re.captures(cell) {
+        return captures
+            .get(1)?
+            .as_str()
+            .replace(',', "")
+            .parse::<u32>()
+            .ok();
+    }
+
+    let plain_text = trainer_catalog_text(cell).replace(',', "");
+    if plain_text.is_empty() {
+        None
+    } else {
+        plain_text.parse::<u32>().ok()
+    }
+}
+
 fn trainer_catalog_cell<'a>(row: &'a str, name: &str) -> Result<&'a str, String> {
     let pattern = format!(r#"(?s)<div class="col {name}">\s*(.*?)</div>"#);
     let cell_re = Regex::new(&pattern)
@@ -3013,9 +3035,16 @@ fn parse_trainer_catalog_results(html: &str) -> Result<Vec<TrainerCatalogResult>
     if !html.contains("class=\"search-results\"") {
         return Err("Trainer catalog data could not be read.".into());
     }
-    let row_re = Regex::new(r#"(?s)<a\s+class="game-result"\s+href="([^"]+)"[^>]*>(.*?)</a>"#)
+    let row_re = Regex::new(r#"(?s)<a\s+class="([^"]+)"\s+href="([^"]+)"[^>]*>(.*?)</a>"#)
         .map_err(|_| "Trainer catalog data could not be read.".to_string())?;
-    let rows = row_re.captures_iter(html).collect::<Vec<_>>();
+    let rows = row_re
+        .captures_iter(html)
+        .filter(|captures| {
+            captures[1]
+                .split_ascii_whitespace()
+                .any(|class| class == "game-result")
+        })
+        .collect::<Vec<_>>();
     if rows.is_empty() {
         if html.contains("class=\"no-results-message\"") {
             return Ok(Vec::new());
@@ -3032,8 +3061,8 @@ fn parse_trainer_catalog_results(html: &str) -> Result<Vec<TrainerCatalogResult>
     let mut results = Vec::new();
 
     for captures in rows.into_iter().take(TRAINER_CATALOG_MAX_RESULTS) {
-        let path = captures.get(1).unwrap().as_str();
-        let row = captures.get(2).unwrap().as_str();
+        let path = captures.get(2).unwrap().as_str();
+        let row = captures.get(3).unwrap().as_str();
         if !valid_trainer_catalog_path(path) {
             return Err("Trainer catalog data could not be read.".into());
         }
@@ -3042,12 +3071,7 @@ fn parse_trainer_catalog_results(html: &str) -> Result<Vec<TrainerCatalogResult>
         if title.is_empty() {
             return Err("Trainer catalog data could not be read.".into());
         }
-        let count_text = trainer_catalog_text(trainer_catalog_cell(row, "cheats")?);
-        let cheat_count = if count_text.is_empty() {
-            None
-        } else {
-            count_text.replace(',', "").parse::<u32>().ok()
-        };
+        let cheat_count = trainer_catalog_cheat_count(trainer_catalog_cell(row, "cheats")?);
         let updated_text = trainer_catalog_text(trainer_catalog_cell(row, "updated")?);
         let updated = (!updated_text.is_empty()).then_some(updated_text);
         let platform_cell = trainer_catalog_cell(row, "platforms")?;
@@ -6751,6 +6775,48 @@ mod trainer_catalog_tests {
         let empty = r#"<div class="search-results"><div class="no-results-message">No results found.</div></div>"#;
         assert!(parse_trainer_catalog_results(empty).unwrap().is_empty());
         assert!(parse_trainer_catalog_results("<html><body>Maintenance</body></html>").is_err());
+    }
+
+    #[test]
+    fn parses_available_rows_with_trainer_class_and_responsive_count() {
+        let available = result_row(
+            "/cheats/cyberpunk-2077-trainers",
+            "Cyberpunk 2077",
+            "https://api-cdn.wemod.com/title_thumbnails/65/700/460/1/thumbnail.webp",
+            r#"<span class="desktop">53</span><span class="mobile">53 cheats</span>"#,
+            "Steam",
+            "3 hours ago",
+            "Available",
+        )
+        .replace(
+            r#"class="game-result""#,
+            r#"class="game-result has-trainer""#,
+        );
+        let unavailable = result_row(
+            "/cheats/unsupported-game-trainers",
+            "Unsupported Game",
+            "https://example.invalid/not-a-catalog-thumbnail.webp",
+            "",
+            "GOG",
+            "",
+            "Unavailable",
+        );
+        let html = format!(r#"<div class="search-results">{available}{unavailable}</div>"#);
+
+        let results = parse_trainer_catalog_results(&html).unwrap();
+        assert_eq!(results.len(), 2);
+        assert_eq!(results[0].title, "Cyberpunk 2077");
+        assert_eq!(results[0].title_id.as_deref(), Some("65"));
+        assert_eq!(results[0].game_id.as_deref(), Some("700"));
+        assert_eq!(results[0].platforms, vec!["Steam"]);
+        assert_eq!(results[0].cheat_count, Some(53));
+        assert_eq!(results[0].updated.as_deref(), Some("3 hours ago"));
+        assert_eq!(results[0].status, "available");
+        assert_eq!(results[1].title_id, None);
+        assert_eq!(results[1].game_id, None);
+        assert_eq!(results[1].cheat_count, None);
+        assert_eq!(results[1].updated, None);
+        assert_eq!(results[1].status, "unavailable");
     }
 
     #[test]

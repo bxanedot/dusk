@@ -115,6 +115,9 @@ for (const result of [
   { ...availableResult, status: "unknown" },
   { ...availableResult, gameId: null },
   { ...availableResult, titleId: null },
+  { ...availableResult, titleId: "0" },
+  { ...availableResult, gameId: "18446744073709551616" },
+  { ...availableResult, titleId: "12x" },
 ]) {
   const rendered = markup(baseProps({ state: "results", results: [result] }));
   assert.doesNotMatch(rendered, /Open trainer/);
