@@ -10,6 +10,7 @@ type TrainerCatalogPanelProps = {
   openingKey: string | null;
   errorMessage: string | null;
   onSearch: () => void;
+  onBrowse: () => void;
   onOpen: (result: TrainerCatalogResult) => void;
 };
 
@@ -91,7 +92,12 @@ export function TrainerCatalogPanel(props: TrainerCatalogPanelProps) {
       )}
       {props.state === "empty" && (
         <div className="trainer-catalog-state trainer-catalog-empty" role="status">
-          <span>No trainer matches were found for this game.</span>
+          <div>
+            <span>No close matches. Try a shorter title or browse the full catalog.</span>
+          </div>
+          <button type="button" className="button secondary" onClick={props.onBrowse}>
+            Browse full catalog
+          </button>
         </div>
       )}
       {props.state === "results" && (

@@ -2,6 +2,15 @@
 
 All notable Dusk changes are documented here.
 
+## 1.8.21 - 2026-10-14
+
+Add an alphabetical catalog browser and refresh the launcher layout.
+
+- Add a full alphabetical trainer catalog with title search, availability filters, and pagination.
+- Fall back to the full catalog when a game title lookup has no direct matches.
+- Group launcher navigation and bring real recent-play activity forward on Home.
+- Add section navigation to Settings while keeping existing controls and Dusk features.
+
 ## 1.8.20 - 2026-10-14
 
 Add a polished trainer catalog to Dusk game details.

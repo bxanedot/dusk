@@ -52,6 +52,7 @@ function baseProps(overrides = {}) {
     openingKey: null,
     errorMessage: null,
     onSearch: () => {},
+    onBrowse: () => {},
     onOpen: () => {},
     ...overrides,
   };
@@ -83,8 +84,20 @@ assert.match(loadingMarkup, /disabled/);
 const errorMarkup = markup(baseProps({ state: "error", errorMessage: "Catalog request failed." }));
 assert.match(errorMarkup, /Catalog request failed\./);
 const emptyMarkup = markup(baseProps({ state: "empty" }));
-assert.match(emptyMarkup, /No trainer matches were found/);
+assert.match(emptyMarkup, /Browse full catalog/);
 assert.doesNotMatch(errorMarkup, /No trainer matches were found/);
+
+let browseCalls = 0;
+const emptyTree = TrainerCatalogPanel(baseProps({
+  state: "empty",
+  onBrowse: () => { browseCalls += 1; },
+}));
+const browseButton = elementsOfType(emptyTree, "button").find(
+  (button) => elementText(button).includes("Browse full catalog"),
+);
+assert.ok(browseButton, "empty game lookup should offer the full catalog");
+browseButton.props.onClick();
+assert.equal(browseCalls, 1, "Browse full catalog should invoke the supplied navigation action");
 
 const resultsMarkup = markup(baseProps({ state: "results", results: [availableResult] }));
 assert.match(resultsMarkup, /Example Game/);

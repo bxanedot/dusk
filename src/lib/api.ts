@@ -66,6 +66,7 @@ export const api = {
   deleteProfile: (profileId: string) =>
     invoke<ProfileRecord>("delete_profile", { profileId }),
   listGames: () => invoke<GameRecord[]>("list_games"),
+  listTrainerCatalog: () => invoke<TrainerCatalogResult[]>("list_trainer_catalog"),
   searchTrainerCatalog: (query: string) =>
     invoke<TrainerCatalogResult[]>("search_trainer_catalog", { query }),
   openTrainer: (titleId: string, gameId: string) =>

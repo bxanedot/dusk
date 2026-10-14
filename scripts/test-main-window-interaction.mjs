@@ -53,6 +53,10 @@ try {
         // a native account-scope command is slow or unavailable.
         if (command === "set_account_scope") return await new Promise(() => {});
         if (command === "get_stats") return stats;
+        if (command === "list_trainer_catalog") return [{
+          title: "Elden Ring", titleId: "1", gameId: "2", platforms: ["Steam"],
+          cheatCount: 12, updated: "Today", status: "available",
+        }];
         if (command === "get_active_profile") return null;
         if (command === "refresh_missing_covers") return { updated: 0, attempted: 0, remaining: 0 };
         if (command === "list_windows_vpn_profiles") return [];
@@ -84,11 +88,22 @@ try {
   }
 
   await clickAndCheck("Library");
+  await clickAndCheck("Trainer Catalog");
+  await page.getByRole("searchbox", { name: "Search catalog" }).fill("elden ring");
+  await page.getByText("Elden Ring", { exact: true }).waitFor({ state: "visible" });
   await clickAndCheck("Favorites");
   await clickAndCheck("Screenshots");
   await clickAndCheck("Achievements");
   await clickAndCheck("Settings");
+  const settingsContent = page.locator(".content");
+  const beforeSettingsJump = await settingsContent.evaluate(element => element.scrollTop);
+  await page.locator(".settings-nav-item").filter({ hasText: "Appearance" }).click();
+  await page.waitForFunction(previous => {
+    const content = document.querySelector(".content");
+    return !!content && content.scrollTop > previous;
+  }, beforeSettingsJump);
   await clickAndCheck("Home");
+  await page.getByRole("button", { name: "Browse Trainer Catalog" }).waitFor({ state: "visible" });
   // Explicitly check the physical click target, not just DOM handler dispatch.
   const home = nav.filter({ hasText: "Home" }).first();
   const blocked = await home.evaluate(element => {
@@ -98,7 +113,7 @@ try {
   });
   assert.equal(blocked, false, "An overlay is physically covering the Home button.");
   assert.deepEqual(errors, [], "Frontend JavaScript exceptions: " + errors.join("; "));
-  console.log("Dusk main window interaction smoke test passed: clickable Home, Library, Favorites, Screenshots, Achievements, Settings.");
+  console.log("Dusk main window interaction smoke test passed: Home, Library, Trainer Catalog search, Favorites, Screenshots, Achievements, Settings, and Settings section navigation.");
 } finally {
   await browser?.close();
   server.kill("SIGTERM");

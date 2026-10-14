@@ -52,6 +52,12 @@ import { getVersion } from "@tauri-apps/api/app";
 import duskLogo from "./assets/dusk-logo.svg";
 import AccountProfileSettings from "./AccountProfileSettings";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import {
+  TrainerCatalogBrowser,
+  filterTrainerCatalogResults,
+  type TrainerCatalogBrowserState,
+  type TrainerCatalogStatusFilter,
+} from "./components/TrainerCatalogBrowser";
 import { TrainerCatalogPanel, canOpenTrainer, trainerResultKey, type TrainerCatalogPanelState } from "./components/TrainerCatalogPanel";
 import { api, type ManagedDownload, type OnlineFixHosterFile } from "./lib/api";
 import { syncAccountState } from "./lib/accountSync";
@@ -78,6 +84,7 @@ type View =
   | "home"
   | "library"
   | "favorites"
+  | "trainerCatalog"
   | "screenshots"
   | "achievements"
   | "settings";
@@ -126,6 +133,10 @@ const EMPTY_STATS: Stats = {
 
 function cx(...values: Array<string | false | null | undefined>) {
   return values.filter(Boolean).join(" ");
+}
+
+function scrollToSettingsSection(sectionId: string) {
+  document.getElementById(sectionId)?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function readableError(error: unknown) {
@@ -409,6 +420,8 @@ function GameDetail(props: {
   onPlay: (game: GameRecord) => Promise<void>;
   onRefresh: () => Promise<void>;
   onToast: (message: string, type?: "ok" | "error") => void;
+  onSearchCatalog: (query: string) => Promise<TrainerCatalogResult[]>;
+  onBrowseCatalog: () => void;
 }) {
   const [busy, setBusy] = useState(false);
   const detailBusyRef = useRef(false);
@@ -469,7 +482,7 @@ function GameDetail(props: {
     setTrainerCatalogResults([]);
     setTrainerCatalogError(null);
     try {
-      const results = await api.searchTrainerCatalog(props.game.title);
+      const results = await props.onSearchCatalog(props.game.title);
       if (trainerCatalogRequest.current !== requestId) return;
       setTrainerCatalogResults(results);
       setTrainerCatalogState(results.length === 0 ? "empty" : "results");
@@ -782,6 +795,7 @@ function GameDetail(props: {
             openingKey={openingTrainerKey}
             errorMessage={trainerCatalogError}
             onSearch={() => void searchTrainerCatalog()}
+            onBrowse={props.onBrowseCatalog}
             onOpen={(result) => void openTrainerResult(result)}
           />
 
@@ -1001,6 +1015,15 @@ export default function App() {
   }, []);
 
   const [view, setView] = useState<View>("home");
+  const [trainerCatalogState, setTrainerCatalogState] = useState<TrainerCatalogBrowserState>("idle");
+  const [trainerCatalogEntries, setTrainerCatalogEntries] = useState<TrainerCatalogResult[]>([]);
+  const [trainerCatalogError, setTrainerCatalogError] = useState<string | null>(null);
+  const [trainerCatalogQuery, setTrainerCatalogQuery] = useState("");
+  const [trainerCatalogStatusFilter, setTrainerCatalogStatusFilter] = useState<TrainerCatalogStatusFilter>("all");
+  const [trainerCatalogPage, setTrainerCatalogPage] = useState(1);
+  const [openingCatalogKey, setOpeningCatalogKey] = useState<string | null>(null);
+  const trainerCatalogEntriesRef = useRef<TrainerCatalogResult[] | null>(null);
+  const trainerCatalogLoadRef = useRef<Promise<TrainerCatalogResult[]> | null>(null);
   const [games, setGames] = useState<GameRecord[]>([]);
   const [stats, setStats] = useState<Stats>(EMPTY_STATS);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
@@ -1121,6 +1144,58 @@ export default function App() {
       toastTimerRef.current = null;
     }, 3600);
   }, []);
+
+  async function loadTrainerCatalog(force = false): Promise<TrainerCatalogResult[]> {
+    if (trainerCatalogEntriesRef.current && !force) {
+      setTrainerCatalogEntries(trainerCatalogEntriesRef.current);
+      setTrainerCatalogState("ready");
+      setTrainerCatalogError(null);
+      return trainerCatalogEntriesRef.current;
+    }
+    if (trainerCatalogLoadRef.current) return trainerCatalogLoadRef.current;
+
+    setTrainerCatalogState("loading");
+    setTrainerCatalogError(null);
+    const request = api.listTrainerCatalog()
+      .then((entries) => {
+        trainerCatalogEntriesRef.current = entries;
+        setTrainerCatalogEntries(entries);
+        setTrainerCatalogState("ready");
+        return entries;
+      })
+      .catch((error) => {
+        setTrainerCatalogError(readableError(error) || "Could not load the catalog. Try again.");
+        setTrainerCatalogState("error");
+        throw error;
+      })
+      .finally(() => {
+        if (trainerCatalogLoadRef.current === request) trainerCatalogLoadRef.current = null;
+      });
+    trainerCatalogLoadRef.current = request;
+    return request;
+  }
+
+  async function searchTrainerCatalog(query: string): Promise<TrainerCatalogResult[]> {
+    const matches = await api.searchTrainerCatalog(query);
+    if (matches.length > 0) return matches;
+    const entries = await loadTrainerCatalog();
+    return filterTrainerCatalogResults(entries, query, "all").slice(0, 25);
+  }
+
+  async function openCatalogTrainer(result: TrainerCatalogResult) {
+    if (!canOpenTrainer(result)) return;
+    const key = trainerResultKey(result);
+    if (!key || !result.titleId || !result.gameId) return;
+    setOpeningCatalogKey(key);
+    try {
+      await api.openTrainer(result.titleId, result.gameId);
+      showToast("Opening trainer app.");
+    } catch (error) {
+      showToast(readableError(error), "error");
+    } finally {
+      setOpeningCatalogKey((current) => current === key ? null : current);
+    }
+  }
 
   function discordPresenceState() {
     if (playingId) {
@@ -2438,7 +2513,8 @@ export default function App() {
           </div>
         </div>
 
-        <nav className="nav-list">
+        <nav className="nav-list" aria-label="Main navigation">
+          <span className="sidebar-nav-label">Start</span>
           <NavItem
             active={view === "home"}
             icon={<Home size={18} />}
@@ -2448,6 +2524,7 @@ export default function App() {
               setCollectionFilter("all");
             }}
           />
+          <span className="sidebar-nav-label">Play</span>
           <NavItem
             active={view === "library" && collectionFilter === "all"}
             icon={<Library size={18} />}
@@ -2468,6 +2545,17 @@ export default function App() {
               setCollectionFilter("all");
             }}
           />
+          <NavItem
+            active={view === "trainerCatalog"}
+            icon={<Gamepad2 size={18} />}
+            label="Trainer Catalog"
+            onClick={() => {
+              setView("trainerCatalog");
+              setWebSearched(false);
+              void loadTrainerCatalog().catch(() => {});
+            }}
+          />
+          <span className="sidebar-nav-label">Activity</span>
           <NavItem
             active={view === "screenshots"}
             icon={<Images size={18} />}
@@ -2659,7 +2747,7 @@ export default function App() {
               <RefreshCw className="spin" size={20} />
               <span>Loading your local library…</span>
             </div>
-          ) : webSearchEnabled && webSearched ? (
+          ) : webSearchEnabled && webSearched && view !== "trainerCatalog" ? (
             <section className="web-results-page">
               <div className="web-results-heading">
                 <div>
@@ -2796,25 +2884,80 @@ export default function App() {
             </section>
           ) : (
             <>
+              {view === "trainerCatalog" && (
+                <TrainerCatalogBrowser
+                  state={trainerCatalogState}
+                  results={trainerCatalogEntries}
+                  query={trainerCatalogQuery}
+                  statusFilter={trainerCatalogStatusFilter}
+                  page={trainerCatalogPage}
+                  openingKey={openingCatalogKey}
+                  errorMessage={trainerCatalogError}
+                  onQueryChange={(nextQuery) => {
+                    setTrainerCatalogQuery(nextQuery);
+                    setTrainerCatalogPage(1);
+                  }}
+                  onStatusFilterChange={(nextFilter) => {
+                    setTrainerCatalogStatusFilter(nextFilter);
+                    setTrainerCatalogPage(1);
+                  }}
+                  onRetry={() => void loadTrainerCatalog(true).catch(() => {})}
+                  onOpen={(result) => void openCatalogTrainer(result)}
+                  onPageChange={setTrainerCatalogPage}
+                />
+              )}
+
               {view === "home" && (
                 <div className="page">
-                  <section className="hero">
-                    <div>
-                      <span className="eyebrow">Local library</span>
-                      <h1>Your games. One place.</h1>
-                      <p>
-                        Dusk scans installed launchers, starts games locally, and records only
-                        the sessions it can actually observe.
-                      </p>
-                      <div className="hero-actions">
-                        <button className="button primary" onClick={() => void scan()} disabled={scanning}>
-                          <ScanSearch size={16} />
-                          Scan this PC
-                        </button>
-                        <button className="button secondary" onClick={() => setAddOpen(true)}>
-                          <Plus size={16} />
-                          Add manually
-                        </button>
+                  <section className="hero home-hero">
+                    <div className="home-hero-main">
+                      {recentGames[0]?.coverDataUrl && (
+                        <img className="home-hero-art" src={recentGames[0].coverDataUrl} alt="" />
+                      )}
+                      {!recentGames[0]?.coverDataUrl && recentGames[0]?.coverPath && (
+                        <img className="home-hero-art" src={convertFileSrc(recentGames[0].coverPath)} alt="" />
+                      )}
+                      <div className="home-hero-copy">
+                        <span className="eyebrow">{recentGames[0] ? "Continue playing" : "Local library"}</span>
+                        <h1>{recentGames[0]?.title || "Your games. One place."}</h1>
+                        <p>
+                          {recentGames[0]
+                            ? `${formatDuration(recentGames[0].totalSeconds)} tracked · ${recentGames[0].launchCount} sessions`
+                            : "Your installed games, playtime, saves, and screenshots stay together in Dusk."}
+                        </p>
+                        <div className="hero-actions">
+                          {recentGames[0] ? (
+                            <>
+                              <button className="button primary" onClick={() => void play(recentGames[0])} disabled={playingId === recentGames[0].id}>
+                                <Play size={16} />
+                                {playingId === recentGames[0].id ? "Launching…" : "Play"}
+                              </button>
+                              <button className="button secondary" onClick={() => setSelectedGameId(recentGames[0].id)}>
+                                Game details
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button className="button primary" onClick={() => void scan()} disabled={scanning}>
+                                <ScanSearch size={16} />
+                                {scanning ? "Scanning…" : "Scan this PC"}
+                              </button>
+                              <button className="button secondary" onClick={() => setAddOpen(true)}>
+                                <Plus size={16} />
+                                Add manually
+                              </button>
+                            </>
+                          )}
+                          <button
+                            className="button ghost"
+                            onClick={() => {
+                              setView("trainerCatalog");
+                              void loadTrainerCatalog().catch(() => {});
+                            }}
+                          >
+                            Browse Trainer Catalog
+                          </button>
+                        </div>
                       </div>
                     </div>
                     <div className="hero-stat">
@@ -3123,7 +3266,39 @@ export default function App() {
                     </div>
                   </div>
 
-                  <section className="settings-card" aria-label="VPN settings">
+                  <div className="settings-layout">
+                    <nav className="settings-nav" aria-label="Settings sections">
+                      <span className="settings-nav-heading">Preferences</span>
+                      {!guestMode && (
+                        <button type="button" className="settings-nav-item" onClick={() => scrollToSettingsSection("settings-account")}>
+                          <UserRound size={15} /> Account
+                        </button>
+                      )}
+                      <button type="button" className="settings-nav-item" onClick={() => scrollToSettingsSection("settings-profiles")}>
+                        <Layers3 size={15} /> Profiles &amp; saves
+                      </button>
+                      <button type="button" className="settings-nav-item" onClick={() => scrollToSettingsSection("settings-network")}>
+                        <ShieldCheck size={15} /> Network
+                      </button>
+                      <button type="button" className="settings-nav-item" onClick={() => scrollToSettingsSection("settings-appearance")}>
+                        <Moon size={15} /> Appearance
+                      </button>
+                      <button type="button" className="settings-nav-item" onClick={() => scrollToSettingsSection("settings-detection")}>
+                        <ScanSearch size={15} /> Game detection
+                      </button>
+                      <button type="button" className="settings-nav-item" onClick={() => scrollToSettingsSection("settings-installers")}>
+                        <PackageOpen size={15} /> Installers
+                      </button>
+                      <button type="button" className="settings-nav-item" onClick={() => scrollToSettingsSection("settings-updates")}>
+                        <RefreshCw size={15} /> Updates
+                      </button>
+                      <button type="button" className="settings-nav-item" onClick={() => scrollToSettingsSection("settings-data")}>
+                        <Database size={15} /> Local data
+                      </button>
+                    </nav>
+
+                    <div className="settings-content">
+                  <section id="settings-network" className="settings-card" aria-label="VPN settings">
                     <div className="settings-card-head">
                       <ShieldCheck size={20} />
                       <div>
@@ -3200,9 +3375,13 @@ export default function App() {
                     </div>
                   </section>
 
-                  {!guestMode && <AccountProfileSettings onToast={showToast} />}
+                  {!guestMode && (
+                    <div id="settings-account" className="settings-section-anchor">
+                      <AccountProfileSettings onToast={showToast} />
+                    </div>
+                  )}
 
-                  <section className="settings-card">
+                  <section id="settings-profiles" className="settings-card">
                     <div className="settings-card-head">
                       <UserRound size={20} />
                       <div>
@@ -3294,7 +3473,7 @@ export default function App() {
                     </div>
                   </section>
 
-                  <section className="settings-card">
+                  <section id="settings-console" className="settings-card">
                     <div className="settings-card-head">
                       <Gamepad2 size={20} />
                       <div>
@@ -3321,7 +3500,7 @@ export default function App() {
                     </div>
                   </section>
 
-                  <section className="settings-card">
+                  <section id="settings-appearance" className="settings-card">
                     <div className="settings-card-head">
                       <Moon size={20} />
                       <div>
@@ -3368,7 +3547,7 @@ export default function App() {
                     </div>
                   </section>
 
-                  <section className="settings-card">
+                  <section id="settings-presence" className="settings-card">
                     <div className="settings-card-head">
                       <Radio size={20} />
                       <div>
@@ -3415,7 +3594,7 @@ export default function App() {
                     </div>
                   </section>
 
-                  <section className="settings-card">
+                  <section id="settings-updates" className="settings-card">
                     <div className="settings-card-head">
                       <RefreshCw size={20} />
                       <div>
@@ -3460,7 +3639,7 @@ export default function App() {
                     )}
                   </section>
 
-                  <section className="settings-card">
+                  <section id="settings-data" className="settings-card">
                     <div className="settings-card-head">
                       <Database size={20} />
                       <div>
@@ -3482,7 +3661,7 @@ export default function App() {
                     </div>
                   </section>
 
-                  <section className="settings-card">
+                  <section id="settings-installers" className="settings-card">
                     <div className="settings-card-head">
                       <PackageOpen size={20} />
                       <div>
@@ -3534,7 +3713,7 @@ export default function App() {
                     </div>
                   </section>
 
-                  <section className="settings-card">
+                  <section id="settings-detection" className="settings-card">
                     <div className="settings-card-head">
                       <ScanSearch size={20} />
                       <div>
@@ -3617,6 +3796,8 @@ export default function App() {
                       </button>
                     </div>
                   </section>
+                    </div>
+                  </div>
                 </div>
               )}
             </>
@@ -3641,6 +3822,12 @@ export default function App() {
           onPlay={play}
           onRefresh={() => refreshCore(false)}
           onToast={showToast}
+          onSearchCatalog={searchTrainerCatalog}
+          onBrowseCatalog={() => {
+            setView("trainerCatalog");
+            setWebSearched(false);
+            void loadTrainerCatalog().catch(() => {});
+          }}
         />
       )}
 
