@@ -1,5 +1,5 @@
 import { ChevronLeft, ChevronRight, ExternalLink, Gamepad2, LoaderCircle, Search } from "lucide-react";
-import { type FormEvent, useState } from "react";
+import { type FormEvent } from "react";
 import type { OnlineCheatTableResult, TrainerCatalogResult } from "../types";
 import { OnlineCheatTableResults, type OnlineCheatTableSearchState } from "./OnlineCheatTableResults";
 
@@ -22,6 +22,7 @@ type TrainerCatalogBrowserProps = {
   onSearchOnlineTables: (query: string) => void;
   onSearchNexusMods: (query: string) => void;
   onSearchTableDirectory: (query: string) => void;
+  onSearchFearlessRevolution: (query: string) => void;
   onImportOnlineTable: (result: OnlineCheatTableResult) => void;
   onQueryChange: (query: string) => void;
   onStatusFilterChange: (filter: TrainerCatalogStatusFilter) => void;
@@ -90,7 +91,6 @@ function statusLabel(status: TrainerCatalogResult["status"]): string {
 }
 
 export function TrainerCatalogBrowser(props: TrainerCatalogBrowserProps) {
-  const [onlineQuery, setOnlineQuery] = useState("");
   const filteredResults = filterTrainerCatalogResults(props.results, props.query, props.statusFilter);
   const pageSize = Math.max(1, props.pageSize ?? 36);
   const pageCount = Math.max(1, Math.ceil(filteredResults.length / pageSize));
@@ -100,7 +100,7 @@ export function TrainerCatalogBrowser(props: TrainerCatalogBrowserProps) {
 
   function searchOnlineTables(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    props.onSearchOnlineTables(onlineQuery);
+    props.onSearchOnlineTables(props.query);
   }
 
   return (
@@ -156,32 +156,25 @@ export function TrainerCatalogBrowser(props: TrainerCatalogBrowserProps) {
         <div className="trainer-online-catalog-heading">
           <div>
             <h2 id="trainer-online-catalog-title">Online .CT tables</h2>
-            <p>Search public GitHub repositories, then browse free table directories such as CheatTable.net. Dusk imports supported numeric entries and skips scripts and pointer paths. Check the source and game version before importing.</p>
+            <p>Search public GitHub repositories or open free community searches on Nexus Mods, CheatTable.net, and Fearless Revolution. Dusk imports supported numeric entries and skips scripts and pointer paths. Check the source and game version before importing.</p>
           </div>
         </div>
         <form className="trainer-online-search trainer-online-search-catalog" onSubmit={searchOnlineTables}>
-          <label className="trainer-online-query">
-            <Search size={16} aria-hidden="true" />
-            <input
-              type="search"
-              value={onlineQuery}
-              onChange={(event) => setOnlineQuery(event.target.value)}
-              placeholder="Search by game title"
-              aria-label="Search public .CT tables by game title"
-              autoComplete="off"
-            />
-          </label>
-          <button type="submit" className="button secondary trainer-online-search-button" disabled={props.onlineTableState === "loading" || props.onlineTableBusyId !== null}>
+          <button type="submit" className="button secondary trainer-online-search-button" disabled={!props.query.trim() || props.onlineTableState === "loading" || props.onlineTableBusyId !== null} title={props.query.trim() ? `Search for ${props.query.trim()}` : "Search the Catalog for a game title first"}>
             {props.onlineTableState === "loading" ? <LoaderCircle size={14} className="spin" /> : <Search size={14} />}
             {props.onlineTableState === "loading" ? "Searching…" : "Search .CT online"}
           </button>
-          <button type="button" className="button secondary trainer-online-search-button trainer-online-nexus-button" onClick={() => props.onSearchNexusMods(onlineQuery)} disabled={!onlineQuery.trim()} title="Open a free search on Nexus Mods in your browser">
+          <button type="button" className="button secondary trainer-online-search-button trainer-online-nexus-button" onClick={() => props.onSearchNexusMods(props.query)} disabled={!props.query.trim()} title="Open a free search on Nexus Mods in your browser">
             <ExternalLink size={14} /> Nexus Mods
           </button>
-          <button type="button" className="button secondary trainer-online-search-button trainer-online-directory-button" onClick={() => props.onSearchTableDirectory(onlineQuery)} disabled={!onlineQuery.trim()} title="Search the free table directory listed by the community index">
+          <button type="button" className="button secondary trainer-online-search-button trainer-online-directory-button" onClick={() => props.onSearchTableDirectory(props.query)} disabled={!props.query.trim()} title="Search the free table directory listed by the community index">
             <ExternalLink size={14} /> CheatTable.net
           </button>
+          <button type="button" className="button secondary trainer-online-search-button trainer-online-fearless-button" onClick={() => props.onSearchFearlessRevolution(props.query)} disabled={!props.query.trim()} title="Search Fearless Revolution in your browser">
+            <ExternalLink size={14} /> Fearless Revolution
+          </button>
         </form>
+        <p className="trainer-panel-note">These searches use the game title in the Catalog search above.</p>
         <OnlineCheatTableResults
           state={props.onlineTableState}
           results={props.onlineTableResults}

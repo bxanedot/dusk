@@ -923,13 +923,10 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
 .trainer-panel-header h3 { margin: 0; font-size: 12px; }
 .trainer-panel-note { margin: 10px 0; color: var(--subtle); font-size: 9px; line-height: 1.45; }
 .trainer-online-search { display: flex; align-items: center; gap: 8px; margin: 12px 0 8px; }
-.trainer-online-query { display: flex; min-width: 0; min-height: 36px; flex: 1; align-items: center; gap: 8px; padding: 0 10px; border: 1px solid var(--border-strong); border-radius: 10px; color: var(--muted); background: rgba(0, 0, 0, 0.12); }
-.trainer-online-query:focus-within { border-color: rgba(var(--accent-rgb), 0.65); box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.1); }
-.trainer-online-query input { width: 100%; min-width: 0; height: 34px; border: 0; outline: 0; color: var(--text); background: transparent; font-size: 10px; }
-.trainer-online-query input::placeholder { color: var(--subtle); }
 .trainer-online-search-button { min-height: 36px; flex: 0 0 auto; gap: 6px; padding: 0 10px; font-size: 9px; }
 .trainer-online-nexus-button { border-color: rgba(var(--accent-rgb), 0.32); }
 .trainer-online-directory-button { border-color: rgba(var(--accent-rgb), 0.32); }
+.trainer-online-fearless-button { border-color: rgba(var(--accent-rgb), 0.32); }
 .trainer-online-results { display: grid; gap: 7px; margin: 8px 0 12px; }
 .trainer-online-result { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: 10px; padding: 9px; border: 1px solid var(--border); border-radius: 10px; background: rgba(0, 0, 0, 0.1); }
 .trainer-online-result-copy { display: grid; min-width: 0; gap: 4px; }
@@ -942,8 +939,6 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
 .trainer-online-catalog-heading h2 { margin: 0; font-size: 14px; }
 .trainer-online-catalog-heading p { margin: 5px 0 0; color: var(--muted); font-size: 10px; line-height: 1.5; }
 .trainer-online-search-catalog { margin: 0; }
-.trainer-online-search-catalog .trainer-online-query { min-height: 42px; padding: 0 13px; }
-.trainer-online-search-catalog .trainer-online-query input { height: 40px; font-size: 11px; }
 .trainer-online-search-catalog .trainer-online-search-button { min-height: 42px; padding: 0 13px; font-size: 10px; }
 .trainer-online-catalog .trainer-online-results { margin: 0; }
 .trainer-online-catalog .trainer-online-result { padding: 11px 12px; }

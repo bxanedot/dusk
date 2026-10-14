@@ -1216,6 +1216,14 @@ export default function App() {
     }
   }
 
+  async function searchFearlessRevolution(query: string) {
+    try {
+      await api.openFearlessRevolutionSearch(query);
+    } catch (error) {
+      showToast(readableError(error) || "Could not open Fearless Revolution search.", "error");
+    }
+  }
+
   async function importCatalogOnlineTable(result: OnlineCheatTableResult) {
     const catalogMatch = filterTrainerCatalogResults(trainerCatalogEntries, result.gameTitle, "all")[0];
     const possibleTitles = new Set([
@@ -2886,6 +2894,7 @@ export default function App() {
                   onSearchOnlineTables={(query) => void searchCatalogOnlineTables(query)}
                   onSearchNexusMods={(query) => void searchNexusMods(query)}
                   onSearchTableDirectory={(query) => void searchCheatTableDirectory(query)}
+                  onSearchFearlessRevolution={(query) => void searchFearlessRevolution(query)}
                   onImportOnlineTable={(result) => void importCatalogOnlineTable(result)}
                   onQueryChange={(nextQuery) => {
                     setTrainerCatalogQuery(nextQuery);

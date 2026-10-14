@@ -3617,6 +3617,26 @@ fn open_cheat_table_directory_search(query: String) -> Result<(), String> {
     Ok(())
 }
 
+#[cfg(target_os = "windows")]
+#[tauri::command]
+fn open_fearless_revolution_search(query: String) -> Result<(), String> {
+    let query = query.trim();
+    if query.is_empty() || query.chars().count() > 120 || query.chars().any(char::is_control) {
+        return Err("Enter a game title with no more than 120 characters.".into());
+    }
+
+    let mut url = reqwest::Url::parse("https://fearlessrevolution.com/search.php")
+        .map_err(|error| format!("Could not prepare Fearless Revolution search: {error}"))?;
+    url.query_pairs_mut().append_pair("keywords", query);
+
+    hidden_windows_command("rundll32")
+        .args(["url.dll,FileProtocolHandler", url.as_str()])
+        .spawn()
+        .map_err(|error| format!("Could not open Fearless Revolution search: {error}"))?;
+
+    Ok(())
+}
+
 #[cfg(not(target_os = "windows"))]
 #[tauri::command]
 fn open_cheat_table_directory_search(_query: String) -> Result<(), String> {
@@ -3627,6 +3647,12 @@ fn open_cheat_table_directory_search(_query: String) -> Result<(), String> {
 #[tauri::command]
 fn open_nexus_mods_search(_query: String) -> Result<(), String> {
     Err("Opening Nexus Mods search is currently implemented for Windows.".into())
+}
+
+#[cfg(not(target_os = "windows"))]
+#[tauri::command]
+fn open_fearless_revolution_search(_query: String) -> Result<(), String> {
+    Err("Opening Fearless Revolution searches is currently implemented for Windows.".into())
 }
 
 #[cfg(not(target_os = "windows"))]
@@ -6646,6 +6672,7 @@ pub fn run() {
             open_external_target,
             open_nexus_mods_search,
             open_cheat_table_directory_search,
+            open_fearless_revolution_search,
             search_trainer_catalog,
             trainer::search_online_cheat_tables,
             trainer::get_cheat_table,

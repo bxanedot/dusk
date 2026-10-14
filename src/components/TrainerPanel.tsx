@@ -21,7 +21,6 @@ export function TrainerPanel(props: TrainerPanelProps) {
   const [entryValues, setEntryValues] = useState<Record<string, string>>({});
   const [entryPage, setEntryPage] = useState(1);
   const [error, setError] = useState<string | null>(null);
-  const [onlineQuery, setOnlineQuery] = useState(props.gameTitle);
   const [onlineState, setOnlineState] = useState<OnlineCheatTableSearchState>("idle");
   const [onlineResults, setOnlineResults] = useState<OnlineCheatTableResult[]>([]);
   const [onlineError, setOnlineError] = useState<string | null>(null);
@@ -53,7 +52,6 @@ export function TrainerPanel(props: TrainerPanelProps) {
 
   useEffect(() => {
     onlineRequest.current += 1;
-    setOnlineQuery(props.gameTitle);
     setOnlineState("idle");
     setOnlineResults([]);
     setOnlineError(null);
@@ -67,7 +65,7 @@ export function TrainerPanel(props: TrainerPanelProps) {
     setOnlineResults([]);
     setOnlineError(null);
     try {
-      const results = await api.searchOnlineCheatTables(onlineQuery);
+      const results = await api.searchOnlineCheatTables(props.gameTitle);
       if (onlineRequest.current !== requestId) return;
       setOnlineResults(results);
       setOnlineState(results.length > 0 ? "results" : "empty");
@@ -81,7 +79,7 @@ export function TrainerPanel(props: TrainerPanelProps) {
 
   async function searchNexusMods() {
     try {
-      await api.openNexusModsSearch(onlineQuery);
+      await api.openNexusModsSearch(props.gameTitle);
     } catch (reason) {
       const message = typeof reason === "string" ? reason : "Could not open Nexus Mods search.";
       props.onToast(message, "error");
@@ -90,9 +88,18 @@ export function TrainerPanel(props: TrainerPanelProps) {
 
   async function searchTableDirectory() {
     try {
-      await api.openCheatTableDirectorySearch(onlineQuery);
+      await api.openCheatTableDirectorySearch(props.gameTitle);
     } catch (reason) {
       const message = typeof reason === "string" ? reason : "Could not open table directory search.";
+      props.onToast(message, "error");
+    }
+  }
+
+  async function searchFearlessRevolution() {
+    try {
+      await api.openFearlessRevolutionSearch(props.gameTitle);
+    } catch (reason) {
+      const message = typeof reason === "string" ? reason : "Could not open Fearless Revolution search.";
       props.onToast(message, "error");
     }
   }
@@ -207,26 +214,18 @@ export function TrainerPanel(props: TrainerPanelProps) {
         For offline, single-player use. Set a value for each numeric entry before applying or holding it. Scripts, pointer paths, and custom types are skipped.
       </p>
       <form className="trainer-online-search" onSubmit={(event) => void searchOnlineTables(event)}>
-        <label className="trainer-online-query">
-          <Search size={15} aria-hidden="true" />
-          <input
-            type="search"
-            value={onlineQuery}
-            onChange={(event) => setOnlineQuery(event.target.value)}
-            placeholder="Search public .CT tables"
-            aria-label={`Search online .CT tables for ${props.gameTitle}`}
-            autoComplete="off"
-          />
-        </label>
         <button type="submit" className="button secondary trainer-online-search-button" disabled={onlineState === "loading" || busyAction !== null}>
           {onlineState === "loading" ? <LoaderCircle size={14} className="spin" /> : <Search size={14} />}
           {onlineState === "loading" ? "Searching…" : "Search .CT online"}
         </button>
-        <button type="button" className="button secondary trainer-online-search-button trainer-online-nexus-button" onClick={() => void searchNexusMods()} disabled={!onlineQuery.trim()} title="Open a free search on Nexus Mods in your browser">
+        <button type="button" className="button secondary trainer-online-search-button trainer-online-nexus-button" onClick={() => void searchNexusMods()} title="Open a free search on Nexus Mods in your browser">
           <ExternalLink size={14} /> Nexus Mods
         </button>
-        <button type="button" className="button secondary trainer-online-search-button trainer-online-directory-button" onClick={() => void searchTableDirectory()} disabled={!onlineQuery.trim()} title="Search the free table directory listed by the community index">
+        <button type="button" className="button secondary trainer-online-search-button trainer-online-directory-button" onClick={() => void searchTableDirectory()} title="Search the free table directory listed by the community index">
           <ExternalLink size={14} /> CheatTable.net
+        </button>
+        <button type="button" className="button secondary trainer-online-search-button trainer-online-fearless-button" onClick={() => void searchFearlessRevolution()} title="Search Fearless Revolution in your browser">
+          <ExternalLink size={14} /> Fearless Revolution
         </button>
       </form>
       <OnlineCheatTableResults
