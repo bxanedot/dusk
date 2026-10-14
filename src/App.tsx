@@ -49,6 +49,7 @@ import {
 } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { getVersion } from "@tauri-apps/api/app";
+import { GameRail } from "./components/GameRail";
 import duskLogo from "./assets/dusk-logo.svg";
 import AccountProfileSettings from "./AccountProfileSettings";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -202,7 +203,7 @@ function NavItem(props: {
   onClick: () => void;
 }) {
   return (
-    <button className={cx("nav-item", props.active && "active")} onClick={props.onClick}>
+    <button className={cx("nav-item", props.active && "active")} title={props.label} aria-label={props.label} aria-current={props.active ? "page" : undefined} onClick={props.onClick}>
       <span className="nav-icon">{props.icon}</span>
       <span>{props.label}</span>
       {typeof props.count === "number" && <span className="nav-count">{props.count}</span>}
@@ -1006,7 +1007,13 @@ export default function App() {
     return () => { cancelled = true; };
   }, []);
 
-  const [view, setView] = useState<View>("home");
+  const [view, setViewState] = useState<View>("home");
+  const [railCollapsed, setRailCollapsed] = useState(false);
+  const setView = useCallback((next: View) => {
+    setSelectedGameId(null);
+    setWebSearched(false);
+    setViewState(next);
+  }, []);
   const [trainerCatalogState, setTrainerCatalogState] = useState<TrainerCatalogBrowserState>("idle");
   const [trainerCatalogEntries, setTrainerCatalogEntries] = useState<TrainerCatalogResult[]>([]);
   const [trainerCatalogError, setTrainerCatalogError] = useState<string | null>(null);
@@ -2495,7 +2502,7 @@ export default function App() {
         </div>
       </header>
 
-      <div className={cx("app-shell", consoleMode && "console-mode", controllerConnected && "controller-connected")}>
+      <div className={cx("app-shell", "launcher-shell", railCollapsed && "rail-collapsed", consoleMode && "console-mode", controllerConnected && "controller-connected")}>
       <aside className="sidebar">
         <div className="brand">
           <div className="brand-mark">
@@ -2565,47 +2572,6 @@ export default function App() {
           />
         </nav>
 
-        <div className="sidebar-divider" />
-
-        <div className="sidebar-section-head">
-          <span>Collections</span>
-          <button className="mini-icon" onClick={createCollection} title="New collection">
-            <Plus size={15} />
-          </button>
-        </div>
-
-        <div className="collection-nav">
-          {collections.length === 0 ? (
-            <p className="sidebar-empty">No collections yet.</p>
-          ) : (
-            collections.map((collection) => (
-              <div className="collection-row" key={collection.id}>
-                <button
-                  className={cx(
-                    "collection-nav-item",
-                    view === "library" && collectionFilter === collection.id && "active",
-                  )}
-                  onClick={() => {
-                    setCollectionFilter(collection.id);
-                    setView("library");
-                  }}
-                >
-                  <Layers3 size={15} />
-                  <span>{collection.name}</span>
-                  <small>{collection.gameCount}</small>
-                </button>
-                <button
-                  className="collection-delete"
-                  onClick={() => void deleteCollection(collection)}
-                  title={"Delete " + collection.name}
-                >
-                  <X size={13} />
-                </button>
-              </div>
-            ))
-          )}
-        </div>
-
         <div className="sidebar-bottom">
           {!guestMode && accountIdentity && (
             <button
@@ -2649,6 +2615,10 @@ export default function App() {
         </div>
       </aside>
 
+      <GameRail games={games} selectedGameId={selectedGameId} collapsed={railCollapsed}
+        onToggleCollapsed={() => setRailCollapsed(value => !value)}
+        onSelectGame={setSelectedGameId}
+        onOpenLibrary={() => { setView("library"); setCollectionFilter("all"); }} />
       <main className="main">
         <header className="topbar">
           <div className="search-controls">
@@ -3101,6 +3071,49 @@ export default function App() {
                     </div>
                   </div>
 
+                  {view === "library" && <section className="library-collections" aria-label="Collections">
+
+
+        <div className="sidebar-section-head">
+          <span>Collections</span>
+          <button className="mini-icon" onClick={createCollection} title="New collection">
+            <Plus size={15} />
+          </button>
+        </div>
+
+        <div className="collection-nav">
+          {collections.length === 0 ? (
+            <p className="sidebar-empty">No collections yet.</p>
+          ) : (
+            collections.map((collection) => (
+              <div className="collection-row" key={collection.id}>
+                <button
+                  className={cx(
+                    "collection-nav-item",
+                    view === "library" && collectionFilter === collection.id && "active",
+                  )}
+                  onClick={() => {
+                    setCollectionFilter(collection.id);
+                    setView("library");
+                  }}
+                >
+                  <Layers3 size={15} />
+                  <span>{collection.name}</span>
+                  <small>{collection.gameCount}</small>
+                </button>
+                <button
+                  className="collection-delete"
+                  onClick={() => void deleteCollection(collection)}
+                  title={"Delete " + collection.name}
+                >
+                  <X size={13} />
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+
+                  </section>}
                   {visibleGames.length === 0 ? (
                     <EmptyState
                       icon={view === "favorites" ? <Heart size={25} /> : <Library size={25} />}
