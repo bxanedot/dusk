@@ -68,7 +68,7 @@ export function TrainerCatalogPanel(props: TrainerCatalogPanelProps) {
       {props.state === "empty" && (
         <div className="trainer-catalog-state trainer-catalog-empty" role="status">
           <div>
-            <span>No close matches. Try a shorter title or browse the full catalog.</span>
+            <span>No title or known alias matches this game in the current catalog snapshot.</span>
           </div>
           <button type="button" className="button secondary" onClick={props.onBrowse}>
             Browse full catalog
@@ -80,7 +80,7 @@ export function TrainerCatalogPanel(props: TrainerCatalogPanelProps) {
           {props.results.map((result, index) => {
             const metadata = [
               result.platforms.length > 0 ? result.platforms.join(" · ") : null,
-              result.cheatCount !== null ? `${result.cheatCount} cheats` : null,
+              result.cheatCount !== null ? `Up to ${result.cheatCount} cheats` : null,
             ].filter((part): part is string => Boolean(part));
 
             return (

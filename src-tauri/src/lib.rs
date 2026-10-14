@@ -2888,6 +2888,8 @@ struct OnlineFixSearchResult {
 #[serde(rename_all = "camelCase")]
 struct TrainerCatalogResult {
     title: String,
+    #[serde(default)]
+    aliases: Vec<String>,
     platforms: Vec<String>,
     cheat_count: Option<u32>,
     status: String,
@@ -2902,6 +2904,78 @@ fn dusk_catalog_entries() -> &'static [TrainerCatalogResult] {
     })
 }
 
+fn normalized_catalog_words(value: &str) -> Vec<String> {
+    let mut words = Vec::new();
+    let mut current = String::new();
+    for character in value.chars().flat_map(char::to_lowercase) {
+        if character.is_alphanumeric() {
+            current.push(character);
+        } else if !current.is_empty() {
+            words.push(std::mem::take(&mut current));
+        }
+    }
+    if !current.is_empty() {
+        words.push(current);
+    }
+    words
+}
+
+fn catalog_match_rank(entry: &TrainerCatalogResult, query: &str, query_words: &[String]) -> Option<u8> {
+    let mut best_rank = None;
+    for candidate in std::iter::once(entry.title.as_str()).chain(entry.aliases.iter().map(String::as_str)) {
+        let words = normalized_catalog_words(candidate);
+        if words.is_empty() {
+            continue;
+        }
+        let normalized = words.join(" ");
+        let rank = if normalized == query {
+            Some(0)
+        } else if normalized.starts_with(query) {
+            Some(1)
+        } else if normalized.contains(query) {
+            Some(2)
+        } else if query_words.iter().all(|query_word| {
+            words.iter().any(|word| {
+                if query_word.chars().count() == 1 {
+                    word == query_word
+                } else {
+                    word.starts_with(query_word)
+                }
+            })
+        }) {
+            Some(3)
+        } else {
+            let token_matches = |query_word: &str, word: &str| {
+                if query_word.chars().count() == 1 {
+                    word == query_word
+                } else {
+                    word.starts_with(query_word)
+                }
+            };
+            let matched_query_words = query_words
+                .iter()
+                .filter(|query_word| words.iter().any(|word| token_matches(query_word, word)))
+                .count();
+            let matched_title_words = words
+                .iter()
+                .filter(|word| query_words.iter().any(|query_word| token_matches(query_word, word)))
+                .count();
+            if matched_query_words >= 2
+                && matched_query_words * 5 >= query_words.len() * 3
+                && matched_title_words * 5 >= words.len() * 3
+            {
+                Some(4)
+            } else {
+                None
+            }
+        };
+        if let Some(rank) = rank {
+            best_rank = Some(best_rank.map_or(rank, |current: u8| current.min(rank)));
+        }
+    }
+    best_rank
+}
+
 fn search_trainer_catalog_blocking(query: String) -> Result<Vec<TrainerCatalogResult>, String> {
     let query = query.trim();
     if query.is_empty() || query.chars().count() > 120 {
@@ -2910,19 +2984,19 @@ fn search_trainer_catalog_blocking(query: String) -> Result<Vec<TrainerCatalogRe
     if query.chars().any(char::is_control) {
         return Err("Search text contains unsupported characters.".into());
     }
-    let tokens = query
-        .split_whitespace()
-        .map(str::to_lowercase)
-        .collect::<Vec<_>>();
-    Ok(dusk_catalog_entries()
+    let query_words = normalized_catalog_words(query);
+    if query_words.is_empty() {
+        return Err("Enter a game title with at least one letter or number.".into());
+    }
+    let normalized_query = query_words.join(" ");
+    let mut matches = dusk_catalog_entries()
         .iter()
-        .filter(|entry| {
-            let title = entry.title.to_lowercase();
-            tokens.iter().all(|token| title.contains(token))
-        })
-        .take(25)
-        .cloned()
-        .collect())
+        .filter_map(|entry| catalog_match_rank(entry, &normalized_query, &query_words).map(|rank| (rank, entry)))
+        .collect::<Vec<_>>();
+    matches.sort_by(|(left_rank, left), (right_rank, right)| {
+        left_rank.cmp(right_rank).then_with(|| left.title.cmp(&right.title))
+    });
+    Ok(matches.into_iter().take(25).map(|(_, entry)| entry.clone()).collect())
 }
 
 #[tauri::command]

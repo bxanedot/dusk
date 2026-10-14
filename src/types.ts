@@ -18,6 +18,7 @@ export type TrainerCatalogStatus = "available" | "unsupported" | "unavailable" |
 
 export interface TrainerCatalogResult {
   title: string;
+  aliases?: string[];
   platforms: string[];
   cheatCount: number | null;
   status: TrainerCatalogStatus;

@@ -32,12 +32,41 @@ export function filterTrainerCatalogResults(
   query: string,
   statusFilter: TrainerCatalogStatusFilter,
 ): TrainerCatalogResult[] {
-  const tokens = normalizeCatalogText(query).split(/\s+/).filter(Boolean);
-  return results.filter((result) => {
-    if (statusFilter !== "all" && result.status !== statusFilter) return false;
-    const searchable = normalizeCatalogText([result.title, ...result.platforms].join(" "));
-    return tokens.every((token) => searchable.includes(token));
+  const normalizedQuery = normalizeCatalogText(query);
+  const tokens = normalizedQuery.split(/\s+/).filter(Boolean);
+  const matches = results.flatMap((result) => {
+    if (statusFilter !== "all" && result.status !== statusFilter) return [];
+    if (tokens.length === 0) return [{ rank: 0, result }];
+    const candidates = [result.title, ...(result.aliases ?? [])];
+    let rank: number | null = null;
+    for (const candidate of candidates) {
+      const normalized = normalizeCatalogText(candidate);
+      const words = normalized.split(/\s+/).filter(Boolean);
+      const candidateRank = normalized === normalizedQuery
+        ? 0
+        : normalized.startsWith(normalizedQuery)
+          ? 1
+          : normalized.includes(normalizedQuery)
+            ? 2
+            : tokens.every((token) => words.some((word) => token.length === 1 ? word === token : word.startsWith(token)))
+              ? 3
+              : (() => {
+                  const matchesWord = (token: string, word: string) => token.length === 1 ? word === token : word.startsWith(token);
+                  const matchedQueryWords = tokens.filter((token) => words.some((word) => matchesWord(token, word))).length;
+                  const matchedTitleWords = words.filter((word) => tokens.some((token) => matchesWord(token, word))).length;
+                  return matchedQueryWords >= 2
+                    && matchedQueryWords * 5 >= tokens.length * 3
+                    && matchedTitleWords * 5 >= words.length * 3
+                    ? 4
+                    : null;
+                })();
+      if (candidateRank !== null && (rank === null || candidateRank < rank)) rank = candidateRank;
+    }
+    return rank === null ? [] : [{ rank, result }];
   });
+  return matches
+    .sort((left, right) => left.rank - right.rank || left.result.title.localeCompare(right.result.title))
+    .map(({ result }) => result);
 }
 
 function statusLabel(status: TrainerCatalogResult["status"]): string {
@@ -140,7 +169,7 @@ export function TrainerCatalogBrowser(props: TrainerCatalogBrowserProps) {
             {visibleResults.map((result, index) => {
               const metadata = [
                 result.platforms.length > 0 ? result.platforms.join(" · ") : null,
-                result.cheatCount !== null ? `${result.cheatCount} cheats` : null,
+                result.cheatCount !== null ? `Up to ${result.cheatCount} cheats` : null,
               ].filter((part): part is string => Boolean(part));
 
               return (
