@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="dusk-violet-title">
-  <title id="dusk-violet-title">Dusk moon and star logo</title>
+  <title id="dusk-violet-title">Dusk crescent logo</title>
   <defs>
     <linearGradient id="dusk-violet-gradient" x1="0.18" y1="0.08" x2="0.82" y2="0.92">
       <stop offset="0" stop-color="#B45CFF"/>
@@ -7,7 +7,5 @@
       <stop offset="1" stop-color="#B45CFF"/>
     </linearGradient>
   </defs>
-  <path d="M365 48 C307 53 252 78 210 119 C164 164 140 225 145 287 C150 355 197 414 262 437 C326 460 398 438 447 378 C409 397 363 398 321 382 C254 357 207 297 199 226 C192 155 230 89 291 59 C314 48 340 43 365 48 Z" fill="url(#dusk-violet-gradient)"/>
-  <path d="M412 106 C418 126 427 135 448 141 C427 147 418 157 412 178 C406 157 397 147 376 141 C397 135 406 126 412 106 Z" fill="url(#dusk-violet-gradient)"/>
-  <circle cx="373" cy="190" r="6" fill="url(#dusk-violet-gradient)"/>
+  <path d="M323.333 76.772 A196 196 0 1 0 323.333 435.228 A180 180 0 0 1 323.333 76.772 Z" fill="url(#dusk-violet-gradient)"/>
 </svg>
