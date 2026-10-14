@@ -4,10 +4,22 @@ All notable Dusk changes are documented here.
 
 ## 1.9.0 - 2026-10-14
 
-Keep catalog browsing in Dusk.
+Expand the Dusk Catalog and add local game-table controls.
 
-- Bundle the catalog data with Dusk so browsing and search work offline.
-- Keep catalog entries informational and remove trainer launch controls.
+### Catalog and launcher
+- Browse the bundled game catalog offline, with title search, availability filters, and pagination.
+- Open a catalog game directly in its Dusk details and keep Dusk's library, launch, saves, collections, and profiles available.
+- Refresh the Dusk crescent logo and keep catalog cards interactive.
+
+### Local tables
+- Import local `.CT` files and manage supported numeric entries in the game's Dusk details.
+- Edit values before applying or holding supported direct numeric entries, including entries without a saved value.
+- Skip scripts, pointer paths, custom types, and unresolved symbolic addresses that Dusk cannot safely load.
+- Search online tables by the current game title from the Catalog or game details, including GitHub tables and community searches on Nexus Mods, CheatTable.net, and Fearless Revolution.
+- Remove the separate CT search field; the Catalog's game-title search drives its online-source buttons.
+
+### Search and settings
+- Allow web search without requiring a VPN connection and remove VPN controls from Settings.
 
 ## 1.8.21 - 2026-10-14
 
