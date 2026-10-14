@@ -58,7 +58,7 @@ import {
   type TrainerCatalogBrowserState,
   type TrainerCatalogStatusFilter,
 } from "./components/TrainerCatalogBrowser";
-import { TrainerCatalogPanel, canOpenTrainer, trainerResultKey, type TrainerCatalogPanelState } from "./components/TrainerCatalogPanel";
+import { TrainerCatalogPanel, type TrainerCatalogPanelState } from "./components/TrainerCatalogPanel";
 import { api, type ManagedDownload, type OnlineFixHosterFile } from "./lib/api";
 import { syncAccountState } from "./lib/accountSync";
 import { currentDuskAccount, logoutDuskAccount, type DuskAccount } from "./lib/auth";
@@ -432,7 +432,6 @@ function GameDetail(props: {
   const [trainerCatalogState, setTrainerCatalogState] = useState<TrainerCatalogPanelState>("idle");
   const [trainerCatalogResults, setTrainerCatalogResults] = useState<TrainerCatalogResult[]>([]);
   const [trainerCatalogError, setTrainerCatalogError] = useState<string | null>(null);
-  const [openingTrainerKey, setOpeningTrainerKey] = useState<string | null>(null);
   const trainerCatalogRequest = useRef(0);
 
   const membershipSet = useMemo(() => {
@@ -470,7 +469,6 @@ function GameDetail(props: {
     setTrainerCatalogState("idle");
     setTrainerCatalogResults([]);
     setTrainerCatalogError(null);
-    setOpeningTrainerKey(null);
     return () => {
       trainerCatalogRequest.current += 1;
     };
@@ -490,21 +488,6 @@ function GameDetail(props: {
       if (trainerCatalogRequest.current !== requestId) return;
       setTrainerCatalogError(readableError(error) || "Could not load trainer results. Try again.");
       setTrainerCatalogState("error");
-    }
-  }
-
-  async function openTrainerResult(result: TrainerCatalogResult) {
-    if (!canOpenTrainer(result)) return;
-    const key = trainerResultKey(result);
-    if (!key || !result.titleId || !result.gameId) return;
-    setOpeningTrainerKey(key);
-    try {
-      await api.openTrainer(result.titleId, result.gameId);
-      props.onToast("Opening trainer app.");
-    } catch (error) {
-      props.onToast(readableError(error), "error");
-    } finally {
-      setOpeningTrainerKey((current) => current === key ? null : current);
     }
   }
 
@@ -792,11 +775,9 @@ function GameDetail(props: {
             gameTitle={props.game.title}
             state={trainerCatalogState}
             results={trainerCatalogResults}
-            openingKey={openingTrainerKey}
             errorMessage={trainerCatalogError}
             onSearch={() => void searchTrainerCatalog()}
             onBrowse={props.onBrowseCatalog}
-            onOpen={(result) => void openTrainerResult(result)}
           />
 
           <section className="detail-section">
@@ -1021,7 +1002,6 @@ export default function App() {
   const [trainerCatalogQuery, setTrainerCatalogQuery] = useState("");
   const [trainerCatalogStatusFilter, setTrainerCatalogStatusFilter] = useState<TrainerCatalogStatusFilter>("all");
   const [trainerCatalogPage, setTrainerCatalogPage] = useState(1);
-  const [openingCatalogKey, setOpeningCatalogKey] = useState<string | null>(null);
   const trainerCatalogEntriesRef = useRef<TrainerCatalogResult[] | null>(null);
   const trainerCatalogLoadRef = useRef<Promise<TrainerCatalogResult[]> | null>(null);
   const [games, setGames] = useState<GameRecord[]>([]);
@@ -1180,21 +1160,6 @@ export default function App() {
     if (matches.length > 0) return matches;
     const entries = await loadTrainerCatalog();
     return filterTrainerCatalogResults(entries, query, "all").slice(0, 25);
-  }
-
-  async function openCatalogTrainer(result: TrainerCatalogResult) {
-    if (!canOpenTrainer(result)) return;
-    const key = trainerResultKey(result);
-    if (!key || !result.titleId || !result.gameId) return;
-    setOpeningCatalogKey(key);
-    try {
-      await api.openTrainer(result.titleId, result.gameId);
-      showToast("Opening trainer app.");
-    } catch (error) {
-      showToast(readableError(error), "error");
-    } finally {
-      setOpeningCatalogKey((current) => current === key ? null : current);
-    }
   }
 
   function discordPresenceState() {
@@ -2548,7 +2513,7 @@ export default function App() {
           <NavItem
             active={view === "trainerCatalog"}
             icon={<Gamepad2 size={18} />}
-            label="Trainer Catalog"
+            label="Dusk Catalog"
             onClick={() => {
               setView("trainerCatalog");
               setWebSearched(false);
@@ -2891,7 +2856,6 @@ export default function App() {
                   query={trainerCatalogQuery}
                   statusFilter={trainerCatalogStatusFilter}
                   page={trainerCatalogPage}
-                  openingKey={openingCatalogKey}
                   errorMessage={trainerCatalogError}
                   onQueryChange={(nextQuery) => {
                     setTrainerCatalogQuery(nextQuery);
@@ -2902,7 +2866,6 @@ export default function App() {
                     setTrainerCatalogPage(1);
                   }}
                   onRetry={() => void loadTrainerCatalog(true).catch(() => {})}
-                  onOpen={(result) => void openCatalogTrainer(result)}
                   onPageChange={setTrainerCatalogPage}
                 />
               )}
@@ -2955,7 +2918,7 @@ export default function App() {
                               void loadTrainerCatalog().catch(() => {});
                             }}
                           >
-                            Browse Trainer Catalog
+                            Browse Dusk Catalog
                           </button>
                         </div>
                       </div>

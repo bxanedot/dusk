@@ -1,5 +1,4 @@
 import { ChevronLeft, ChevronRight, Gamepad2, LoaderCircle, Search } from "lucide-react";
-import { canOpenTrainer, trainerResultKey } from "./TrainerCatalogPanel";
 import type { TrainerCatalogResult } from "../types";
 
 export type TrainerCatalogBrowserState = "idle" | "loading" | "error" | "ready";
@@ -12,12 +11,10 @@ type TrainerCatalogBrowserProps = {
   statusFilter: TrainerCatalogStatusFilter;
   page: number;
   pageSize?: number;
-  openingKey: string | null;
   errorMessage: string | null;
   onQueryChange: (query: string) => void;
   onStatusFilterChange: (filter: TrainerCatalogStatusFilter) => void;
   onRetry: () => void;
-  onOpen: (result: TrainerCatalogResult) => void;
   onPageChange: (page: number) => void;
 };
 
@@ -65,8 +62,8 @@ export function TrainerCatalogBrowser(props: TrainerCatalogBrowserProps) {
       <div className="page-heading trainer-catalog-page-heading">
         <div>
           <span className="eyebrow">Browse</span>
-          <h1>Trainer Catalog</h1>
-          <p>Search games, check support details, and open available trainers.</p>
+          <h1>Dusk Catalog</h1>
+          <p>Search game trainer listings and review support details, all in Dusk. Offline snapshot · 14 Oct 2026.</p>
         </div>
         {props.state === "ready" && (
           <div className="trainer-catalog-total" aria-label={`${props.results.length} catalog entries`}>
@@ -141,17 +138,13 @@ export function TrainerCatalogBrowser(props: TrainerCatalogBrowserProps) {
         <>
           <div className="trainer-catalog-grid" aria-label="Trainer catalog results" aria-live="polite">
             {visibleResults.map((result, index) => {
-              const launchable = canOpenTrainer(result);
-              const key = trainerResultKey(result);
-              const opening = key !== null && props.openingKey === key;
               const metadata = [
                 result.platforms.length > 0 ? result.platforms.join(" · ") : null,
                 result.cheatCount !== null ? `${result.cheatCount} cheats` : null,
-                result.updated ? `Updated ${result.updated}` : null,
               ].filter((part): part is string => Boolean(part));
 
               return (
-                <article className="trainer-catalog-card" key={key || `${result.title}:${index}`}>
+                <article className="trainer-catalog-card" key={`${result.title}:${index}`}>
                   <span className="trainer-catalog-card-icon" aria-hidden="true"><Gamepad2 size={19} /></span>
                   <div className="trainer-catalog-card-body">
                     <div className="trainer-catalog-card-title">
@@ -161,17 +154,6 @@ export function TrainerCatalogBrowser(props: TrainerCatalogBrowserProps) {
                     <div className="trainer-catalog-card-meta">
                       {metadata.length > 0 ? metadata.join(" · ") : "Details not available"}
                     </div>
-                    {launchable && (
-                      <button
-                        type="button"
-                        className="button primary trainer-catalog-card-open"
-                        onClick={() => props.onOpen(result)}
-                        disabled={opening}
-                        aria-label={`Open trainer for ${result.title}`}
-                      >
-                        {opening ? "Opening…" : "Open trainer"}
-                      </button>
-                    )}
                   </div>
                 </article>
               );
@@ -200,7 +182,6 @@ export function TrainerCatalogBrowser(props: TrainerCatalogBrowserProps) {
               </button>
             </nav>
           )}
-          <p className="trainer-catalog-page-note">Trainer controls are handled by the trainer app.</p>
         </>
       )}
     </div>

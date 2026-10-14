@@ -2,11 +2,11 @@
 
 Dusk is a local-first Windows game launcher built with Tauri, Rust, React, TypeScript, and SQLite.
 
-**Current version: 1.8.21**
+**Current version: 1.9.0**
 
 It scans real local game installations, launches games, tracks sessions it can observe, and keeps the library database on the user's PC. Dusk does not ship with fake games or seeded playtime.
 
-The in-app Trainer Catalog lets you search listed game titles, check support details, and open available trainers.
+The in-app Dusk Catalog includes 3,510 unique game trainer listings and works offline. Search titles, compare platform support, and review availability details.
 
 ## Games-first Home and background downloads (v1.8.10)
 
@@ -54,7 +54,7 @@ does not bypass source login, authorization, or download-host restrictions.
 
 ## Features
 
-- Trainer Catalog in game details with availability, platform and cheat metadata plus launch for available entries
+- Offline Dusk Catalog with 3,510 searchable game trainer listings
 - Steam library scanning from local app manifests and library folders
 - Epic Games scanning from local manifest files
 - GOG scanning from local Windows install records

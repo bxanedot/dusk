@@ -41,16 +41,16 @@ const { TrainerCatalogBrowser, filterTrainerCatalogResults } = componentModule.e
 
 const entries = [
   {
-    title: "Elden Ring", titleId: "1", gameId: "11", platforms: ["Steam"],
-    cheatCount: 12, updated: "Today", status: "available",
+    title: "Elden Ring", platforms: ["Steam"],
+    cheatCount: 12, status: "available",
   },
   {
-    title: "The Witcher 3: Wild Hunt", titleId: "2", gameId: "22", platforms: ["GOG"],
-    cheatCount: 8, updated: null, status: "unsupported",
+    title: "The Witcher 3: Wild Hunt", platforms: ["GOG"],
+    cheatCount: 8, status: "unsupported",
   },
   {
-    title: "Baldur's Gate 3", titleId: "3", gameId: "33", platforms: ["Steam", "GOG"],
-    cheatCount: null, updated: "Yesterday", status: "unavailable",
+    title: "Baldur's Gate 3", platforms: ["Steam", "GOG"],
+    cheatCount: null, status: "unavailable",
   },
 ];
 

@@ -2,21 +2,28 @@
 
 All notable Dusk changes are documented here.
 
+## 1.9.0 - 2026-10-14
+
+Keep catalog browsing in Dusk.
+
+- Bundle the catalog data with Dusk so browsing and search work offline.
+- Keep catalog entries informational and remove trainer launch controls.
+
 ## 1.8.21 - 2026-10-14
 
-Add an alphabetical catalog browser and refresh the launcher layout.
+Add an alphabetical Dusk Catalog browser and refresh the launcher layout.
 
-- Add a full alphabetical trainer catalog with title search, availability filters, and pagination.
-- Fall back to the full catalog when a game title lookup has no direct matches.
+- Add an alphabetical Dusk Catalog with title search, availability filters, and pagination.
+- Fall back to Dusk Catalog search when a game title lookup has no direct matches.
 - Group launcher navigation and bring real recent-play activity forward on Home.
 - Add section navigation to Settings while keeping existing controls and Dusk features.
 
 ## 1.8.20 - 2026-10-14
 
-Add a polished trainer catalog to Dusk game details.
+Add game trainer details to the Dusk Catalog.
 
 - Show trainer availability, platforms, cheat counts and update dates inside Dusk.
-- Open available trainers from their catalog entries; trainer controls remain in the trainer app.
+- Show catalog availability and metadata inside Dusk.
 - Keep Dusk's existing Play, saves, collections, profiles and game-management features in place.
 
 ## 1.8.19 - 2026-10-10

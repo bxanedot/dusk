@@ -911,7 +911,6 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
 .trainer-status-unsupported { border-color: rgba(239, 100, 100, 0.18); color: #e49a9a; background: rgba(94, 29, 32, 0.16); }
 .trainer-status-unavailable { border-color: rgba(242, 184, 95, 0.2); color: #e7c17f; background: rgba(102, 71, 25, 0.16); }
 .trainer-status-unknown { color: var(--muted); }
-.trainer-open { min-height: 30px; gap: 5px; padding: 0 9px; white-space: nowrap; font-size: 8px; }
 .trainer-catalog-note { margin: 10px 0 0; color: var(--subtle); font-size: 8px; line-height: 1.45; }
 
 .trainer-catalog-page { max-width: 1440px; }
@@ -937,7 +936,6 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
 .trainer-catalog-card-title strong { display: -webkit-box; min-width: 0; overflow: hidden; font-size: 12px; line-height: 1.4; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .trainer-catalog-card .trainer-status { margin-top: 1px; font-size: 8px; }
 .trainer-catalog-card-meta { min-height: 28px; color: var(--subtle); font-size: 9px; line-height: 1.5; }
-.trainer-catalog-card-open { min-height: 32px; justify-self: start; gap: 6px; padding: 0 10px; font-size: 10px; }
 .trainer-catalog-page-state { display: flex; min-height: 112px; align-items: center; justify-content: center; gap: 11px; padding: 22px; border: 1px dashed var(--border-strong); border-radius: 14px; color: var(--muted); background: var(--surface); font-size: 12px; }
 .trainer-catalog-page-state > svg { flex: 0 0 auto; color: var(--accent); }
 .trainer-catalog-page-state > div { display: grid; gap: 4px; }
@@ -946,7 +944,6 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
 .trainer-catalog-page-error { border-color: rgba(239, 100, 100, 0.24); color: #f0aaaa; }
 .trainer-catalog-pagination { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 18px; color: var(--muted); font-size: 11px; }
 .trainer-catalog-pagination .button { min-height: 36px; gap: 5px; }
-.trainer-catalog-page-note { margin: 16px 0 0; color: var(--subtle); font-size: 9px; text-align: center; }
 
 .collection-checks { display: grid; gap: 6px; }
 
@@ -1171,7 +1168,6 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
   .trainer-catalog-header { align-items: stretch; flex-direction: column; }
   .trainer-catalog-search { justify-content: center; }
   .trainer-result { grid-template-columns: minmax(0, 1fr); }
-  .trainer-open { justify-self: start; }
 }
 
 .detail-section-heading {

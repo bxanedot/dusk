@@ -49,22 +49,17 @@ function baseProps(overrides = {}) {
     gameTitle: "Example Game",
     state: "idle",
     results: [],
-    openingKey: null,
     errorMessage: null,
     onSearch: () => {},
     onBrowse: () => {},
-    onOpen: () => {},
     ...overrides,
   };
 }
 
 const availableResult = {
   title: "Example Game",
-  titleId: "123",
-  gameId: "456",
   platforms: ["Steam", "Xbox"],
   cheatCount: 42,
-  updated: "Oct 12, 2026",
   status: "available",
 };
 
@@ -105,40 +100,12 @@ assert.match(resultsMarkup, /Available/);
 assert.match(resultsMarkup, /Steam/);
 assert.match(resultsMarkup, /Xbox/);
 assert.match(resultsMarkup, /42 cheats/);
-assert.match(resultsMarkup, /Oct 12, 2026/);
-assert.match(resultsMarkup, /Trainer controls are handled by the trainer app\./);
-assert.match(resultsMarkup, /Open trainer/);
-
-let openedResult = null;
-const availableTree = TrainerCatalogPanel(baseProps({
-  state: "results",
-  results: [availableResult],
-  onOpen: (result) => { openedResult = result; },
-}));
-const openButton = elementsOfType(availableTree, "button").find(
-  (button) => elementText(button).includes("Open trainer"),
-);
-assert.ok(openButton, "available result with IDs should offer Open trainer");
-openButton.props.onClick();
-assert.equal(openedResult, availableResult, "Open trainer should pass the selected result");
-
-for (const result of [
-  { ...availableResult, status: "unavailable" },
-  { ...availableResult, status: "unsupported" },
-  { ...availableResult, status: "unknown" },
-  { ...availableResult, gameId: null },
-  { ...availableResult, titleId: null },
-  { ...availableResult, titleId: "0" },
-  { ...availableResult, gameId: "18446744073709551616" },
-  { ...availableResult, titleId: "12x" },
-]) {
-  const rendered = markup(baseProps({ state: "results", results: [result] }));
-  assert.doesNotMatch(rendered, /Open trainer/);
-}
+assert.match(resultsMarkup, /Dusk Catalog/);
+assert.doesNotMatch(resultsMarkup, /Open trainer|Opening trainer|trainer app/i);
 
 const missingCountMarkup = markup(baseProps({
   state: "results",
-  results: [{ ...availableResult, cheatCount: null, updated: null }],
+  results: [{ ...availableResult, cheatCount: null }],
 }));
 assert.doesNotMatch(missingCountMarkup, /0 cheats/);
 

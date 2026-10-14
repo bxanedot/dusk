@@ -1,7 +1,7 @@
 {
   "name": "dusk",
   "private": true,
-  "version": "1.8.21",
+  "version": "1.9.0",
   "type": "module",
   "scripts": {
     "brand:prepare": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/prepare-brand.ps1",

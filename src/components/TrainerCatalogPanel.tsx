@@ -7,30 +7,10 @@ type TrainerCatalogPanelProps = {
   gameTitle: string;
   state: TrainerCatalogPanelState;
   results: TrainerCatalogResult[];
-  openingKey: string | null;
   errorMessage: string | null;
   onSearch: () => void;
   onBrowse: () => void;
-  onOpen: (result: TrainerCatalogResult) => void;
 };
-
-const MAX_CATALOG_ID = 18446744073709551615n;
-
-function isValidCatalogId(value: string | null): boolean {
-  if (!value || !/^[0-9]+$/.test(value)) return false;
-  try {
-    const numeric = BigInt(value);
-    return numeric > 0n && numeric <= MAX_CATALOG_ID;
-  } catch {
-    return false;
-  }
-}
-
-export function canOpenTrainer(result: TrainerCatalogResult): boolean {
-  return result.status === "available"
-    && isValidCatalogId(result.titleId)
-    && isValidCatalogId(result.gameId);
-}
 
 function statusLabel(status: TrainerCatalogResult["status"]): string {
   switch (status) {
@@ -41,24 +21,19 @@ function statusLabel(status: TrainerCatalogResult["status"]): string {
   }
 }
 
-export function trainerResultKey(result: TrainerCatalogResult): string | null {
-  if (!isValidCatalogId(result.titleId) || !isValidCatalogId(result.gameId)) return null;
-  return result.titleId + ":" + result.gameId;
-}
-
 export function TrainerCatalogPanel(props: TrainerCatalogPanelProps) {
   const searching = props.state === "loading";
 
   return (
-    <section className="detail-section trainer-catalog" aria-label="Trainer Catalog">
+    <section className="detail-section trainer-catalog" aria-label="Dusk Catalog">
       <div className="trainer-catalog-header">
         <div className="trainer-catalog-heading-copy">
           <span className="trainer-catalog-mark" aria-hidden="true">
             <Gamepad2 size={17} />
           </span>
           <div>
-            <h3>Trainer Catalog</h3>
-            <p>Find trainers and support details for {props.gameTitle}.</p>
+            <h3>Dusk Catalog</h3>
+            <p>Browse trainer listings and support details for {props.gameTitle}.</p>
           </div>
         </div>
         <button
@@ -103,17 +78,13 @@ export function TrainerCatalogPanel(props: TrainerCatalogPanelProps) {
       {props.state === "results" && (
         <div className="trainer-result-list" aria-live="polite">
           {props.results.map((result, index) => {
-            const launchable = canOpenTrainer(result);
-            const key = trainerResultKey(result);
-            const opening = key !== null && props.openingKey === key;
             const metadata = [
               result.platforms.length > 0 ? result.platforms.join(" · ") : null,
               result.cheatCount !== null ? `${result.cheatCount} cheats` : null,
-              result.updated ? `Updated ${result.updated}` : null,
             ].filter((part): part is string => Boolean(part));
 
             return (
-              <article className="trainer-result" key={key || result.title + ":" + index}>
+              <article className="trainer-result" key={result.title + ":" + index}>
                 <div className="trainer-result-main">
                   <div className="trainer-result-heading">
                     <strong title={result.title}>{result.title}</strong>
@@ -125,25 +96,12 @@ export function TrainerCatalogPanel(props: TrainerCatalogPanelProps) {
                     {metadata.length > 0 ? metadata.join(" · ") : "Details not available"}
                   </div>
                 </div>
-                {launchable && (
-                  <button
-                    type="button"
-                    className="button primary trainer-open"
-                    onClick={() => props.onOpen(result)}
-                    disabled={opening}
-                    aria-label={`Open trainer for ${result.title}`}
-                  >
-                    {opening && <LoaderCircle size={13} className="spin" />}
-                    {opening ? "Opening…" : "Open trainer"}
-                  </button>
-                )}
               </article>
             );
           })}
         </div>
       )}
 
-      <p className="trainer-catalog-note">Trainer controls are handled by the trainer app.</p>
     </section>
   );
 }

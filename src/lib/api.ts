@@ -69,8 +69,6 @@ export const api = {
   listTrainerCatalog: () => invoke<TrainerCatalogResult[]>("list_trainer_catalog"),
   searchTrainerCatalog: (query: string) =>
     invoke<TrainerCatalogResult[]>("search_trainer_catalog", { query }),
-  openTrainer: (titleId: string, gameId: string) =>
-    invoke<void>("open_trainer", { titleId, gameId }),
   scanGames: () => invoke<ScanResult>("scan_games"),
   refreshMissingCovers: () =>
     invoke<{ attempted: number; updated: number; remaining: number }>("refresh_missing_covers"),
