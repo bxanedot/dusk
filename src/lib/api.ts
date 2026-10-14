@@ -4,6 +4,7 @@ import type {
   AutoScreenshotScanResult,
   CollectionMembership,
   CollectionRecord,
+  CheatTable,
   CloudUploadResult,
   CloudSyncAllResult,
   GameRecord,
@@ -69,6 +70,12 @@ export const api = {
   listTrainerCatalog: () => invoke<TrainerCatalogResult[]>("list_trainer_catalog"),
   searchTrainerCatalog: (query: string) =>
     invoke<TrainerCatalogResult[]>("search_trainer_catalog", { query }),
+  getCheatTable: (gameId: string) => invoke<CheatTable | null>("get_cheat_table", { gameId }),
+  importCheatTable: (gameId: string) => invoke<CheatTable | null>("import_cheat_table", { gameId }),
+  applyCheatValue: (gameId: string, entryId: string) =>
+    invoke<void>("apply_cheat_value", { gameId, entryId }),
+  setCheatHold: (gameId: string, entryId: string, enabled: boolean) =>
+    invoke<void>("set_cheat_hold", { gameId, entryId, enabled }),
   scanGames: () => invoke<ScanResult>("scan_games"),
   refreshMissingCovers: () =>
     invoke<{ attempted: number; updated: number; remaining: number }>("refresh_missing_covers"),

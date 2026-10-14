@@ -92,7 +92,7 @@ export function TrainerCatalogBrowser(props: TrainerCatalogBrowserProps) {
         <div>
           <span className="eyebrow">Browse</span>
           <h1>Dusk Catalog</h1>
-          <p>Search game trainer listings and review support details, all in Dusk. Offline snapshot · 14 Oct 2026.</p>
+          <p>Search title and platform coverage in Dusk's offline snapshot. Import a local table from game details to use numeric values.</p>
         </div>
         {props.state === "ready" && (
           <div className="trainer-catalog-total" aria-label={`${props.results.length} catalog entries`}>

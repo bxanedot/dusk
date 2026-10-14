@@ -33,7 +33,7 @@ export function TrainerCatalogPanel(props: TrainerCatalogPanelProps) {
           </span>
           <div>
             <h3>Dusk Catalog</h3>
-            <p>Browse trainer listings and support details for {props.gameTitle}.</p>
+            <p>Check title and platform coverage for {props.gameTitle}. Import a local table below to use values.</p>
           </div>
         </div>
         <button
@@ -51,7 +51,7 @@ export function TrainerCatalogPanel(props: TrainerCatalogPanelProps) {
       {props.state === "idle" && (
         <div className="trainer-catalog-state" role="status">
           <Search size={15} />
-          <span>Search the catalog to check trainer availability.</span>
+          <span>Search the offline catalog for this game's title and platform coverage.</span>
         </div>
       )}
       {props.state === "loading" && (

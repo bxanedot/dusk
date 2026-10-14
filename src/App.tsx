@@ -59,6 +59,7 @@ import {
   type TrainerCatalogStatusFilter,
 } from "./components/TrainerCatalogBrowser";
 import { TrainerCatalogPanel, type TrainerCatalogPanelState } from "./components/TrainerCatalogPanel";
+import { TrainerPanel } from "./components/TrainerPanel";
 import { api, type ManagedDownload, type OnlineFixHosterFile } from "./lib/api";
 import { syncAccountState } from "./lib/accountSync";
 import { currentDuskAccount, logoutDuskAccount, type DuskAccount } from "./lib/auth";
@@ -778,6 +779,13 @@ function GameDetail(props: {
             errorMessage={trainerCatalogError}
             onSearch={() => void searchTrainerCatalog()}
             onBrowse={props.onBrowseCatalog}
+          />
+
+          <TrainerPanel
+            gameId={props.game.id}
+            gameTitle={props.game.title}
+            hasExecutable={Boolean(props.game.exePath)}
+            onToast={props.onToast}
           />
 
           <section className="detail-section">

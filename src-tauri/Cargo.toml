@@ -24,9 +24,18 @@ fs2 = "0.4"
 rfd = "0.15"
 uuid = { version = "1", features = ["v4"] }
 sha2 = "0.10"
+quick-xml = "0.42"
 
 tauri-plugin-updater = "=2.12.0"
 
 reqwest = { version = "=0.13.5", features = ["blocking", "json", "query"] }
 
 discord-rich-presence = "1.1.0"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61.2", features = [
+  "Win32_Foundation",
+  "Win32_System_Diagnostics_Debug",
+  "Win32_System_Diagnostics_ToolHelp",
+  "Win32_System_Threading",
+] }

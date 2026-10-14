@@ -24,6 +24,22 @@ export interface TrainerCatalogResult {
   status: TrainerCatalogStatus;
 }
 
+export interface CheatEntry {
+  id: string;
+  title: string;
+  address: string;
+  variableType: string;
+  value: string;
+  showAsHex: boolean;
+}
+
+export interface CheatTable {
+  sourceFileName: string;
+  importedAt: string;
+  skippedEntries: number;
+  entries: CheatEntry[];
+}
+
 export interface ScanResult {
   found: number;
   added: number;

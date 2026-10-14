@@ -913,6 +913,26 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
 .trainer-status-unknown { color: var(--muted); }
 .trainer-catalog-note { margin: 10px 0 0; color: var(--subtle); font-size: 8px; line-height: 1.45; }
 
+.trainer-panel {
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: linear-gradient(145deg, rgba(var(--accent-rgb), 0.07), var(--surface-2) 48%);
+}
+.trainer-panel-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.trainer-panel-header h3 { margin: 0; font-size: 12px; }
+.trainer-panel-note { margin: 10px 0; color: var(--subtle); font-size: 9px; line-height: 1.45; }
+.trainer-table-summary { display: flex; justify-content: space-between; gap: 10px; margin: 12px 0 7px; color: var(--muted); font-size: 9px; }
+.trainer-table-summary span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.trainer-table-summary span:last-child { flex: 0 0 auto; }
+.trainer-entry-list { display: grid; gap: 7px; }
+.trainer-entry { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: 9px; padding: 9px; border: 1px solid var(--border); border-radius: 10px; background: rgba(0, 0, 0, 0.1); }
+.trainer-entry-copy { display: grid; min-width: 0; gap: 4px; }
+.trainer-entry-copy strong { overflow: hidden; color: var(--text); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.trainer-entry-copy span { overflow: hidden; color: var(--subtle); font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+.trainer-entry-actions { display: flex; flex: 0 0 auto; gap: 5px; }
+.trainer-entry-button { min-height: 29px; gap: 4px; padding: 0 8px; font-size: 9px; }
+
 .trainer-catalog-page { max-width: 1440px; }
 .trainer-catalog-page-heading { align-items: center; }
 .trainer-catalog-page-heading h1 { font-size: clamp(28px, 3vw, 38px); }
@@ -1168,6 +1188,10 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
   .trainer-catalog-header { align-items: stretch; flex-direction: column; }
   .trainer-catalog-search { justify-content: center; }
   .trainer-result { grid-template-columns: minmax(0, 1fr); }
+  .trainer-panel-header { align-items: stretch; flex-direction: column; }
+  .trainer-panel-header > .button { justify-content: center; }
+  .trainer-entry { align-items: stretch; flex-direction: column; }
+  .trainer-entry-actions { justify-content: flex-end; }
 }
 
 .detail-section-heading {

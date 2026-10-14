@@ -1,6 +1,7 @@
 mod archive_import;
 mod download_manager;
 mod game_sources;
+mod trainer;
 mod windows_vpn;
 
 use chrono::{DateTime, Utc};
@@ -6587,6 +6588,10 @@ pub fn run() {
             run_game_installer,
             open_external_target,
             search_trainer_catalog,
+            trainer::get_cheat_table,
+            trainer::import_cheat_table,
+            trainer::apply_cheat_value,
+            trainer::set_cheat_hold,
             search_online_fix_games,
             game_sources::search_game_source,
             game_sources::open_game_source_listing,
