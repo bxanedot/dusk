@@ -1,5 +1,7 @@
 import { ChevronLeft, ChevronRight, Gamepad2, LoaderCircle, Search } from "lucide-react";
-import type { TrainerCatalogResult } from "../types";
+import { type FormEvent, useState } from "react";
+import type { OnlineCheatTableResult, TrainerCatalogResult } from "../types";
+import { OnlineCheatTableResults, type OnlineCheatTableSearchState } from "./OnlineCheatTableResults";
 
 export type TrainerCatalogBrowserState = "idle" | "loading" | "error" | "ready";
 export type TrainerCatalogStatusFilter = "all" | TrainerCatalogResult["status"];
@@ -12,7 +14,13 @@ type TrainerCatalogBrowserProps = {
   page: number;
   pageSize?: number;
   errorMessage: string | null;
+  onlineTableState: OnlineCheatTableSearchState;
+  onlineTableResults: OnlineCheatTableResult[];
+  onlineTableError: string | null;
+  onlineTableBusyId: string | null;
   onSelectGame: (result: TrainerCatalogResult) => void;
+  onSearchOnlineTables: (query: string) => void;
+  onImportOnlineTable: (result: OnlineCheatTableResult) => void;
   onQueryChange: (query: string) => void;
   onStatusFilterChange: (filter: TrainerCatalogStatusFilter) => void;
   onRetry: () => void;
@@ -80,12 +88,18 @@ function statusLabel(status: TrainerCatalogResult["status"]): string {
 }
 
 export function TrainerCatalogBrowser(props: TrainerCatalogBrowserProps) {
+  const [onlineQuery, setOnlineQuery] = useState("");
   const filteredResults = filterTrainerCatalogResults(props.results, props.query, props.statusFilter);
   const pageSize = Math.max(1, props.pageSize ?? 36);
   const pageCount = Math.max(1, Math.ceil(filteredResults.length / pageSize));
   const page = Math.min(Math.max(1, props.page), pageCount);
   const visibleResults = filteredResults.slice((page - 1) * pageSize, page * pageSize);
   const searching = props.state === "loading";
+
+  function searchOnlineTables(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    props.onSearchOnlineTables(onlineQuery);
+  }
 
   return (
     <div className="page trainer-catalog-page">
@@ -135,6 +149,39 @@ export function TrainerCatalogBrowser(props: TrainerCatalogBrowserProps) {
           </span>
         )}
       </div>
+
+      <section className="trainer-online-catalog" aria-labelledby="trainer-online-catalog-title">
+        <div className="trainer-online-catalog-heading">
+          <div>
+            <h2 id="trainer-online-catalog-title">Online .CT tables</h2>
+            <p>Search public GitHub repositories. Dusk imports supported numeric entries and skips scripts and pointer paths. Community tables may be outdated, so check the source and game version.</p>
+          </div>
+        </div>
+        <form className="trainer-online-search trainer-online-search-catalog" onSubmit={searchOnlineTables}>
+          <label className="trainer-online-query">
+            <Search size={16} aria-hidden="true" />
+            <input
+              type="search"
+              value={onlineQuery}
+              onChange={(event) => setOnlineQuery(event.target.value)}
+              placeholder="Search by game title"
+              aria-label="Search public .CT tables by game title"
+              autoComplete="off"
+            />
+          </label>
+          <button type="submit" className="button secondary trainer-online-search-button" disabled={props.onlineTableState === "loading" || props.onlineTableBusyId !== null}>
+            {props.onlineTableState === "loading" ? <LoaderCircle size={14} className="spin" /> : <Search size={14} />}
+            {props.onlineTableState === "loading" ? "Searching…" : "Search .CT online"}
+          </button>
+        </form>
+        <OnlineCheatTableResults
+          state={props.onlineTableState}
+          results={props.onlineTableResults}
+          errorMessage={props.onlineTableError}
+          busyId={props.onlineTableBusyId}
+          onImport={props.onImportOnlineTable}
+        />
+      </section>
 
       {props.state === "idle" && (
         <div className="trainer-catalog-page-state" role="status">

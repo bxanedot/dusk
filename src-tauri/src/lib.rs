@@ -2,7 +2,6 @@ mod archive_import;
 mod download_manager;
 mod game_sources;
 mod trainer;
-mod windows_vpn;
 
 use chrono::{DateTime, Utc};
 use discord_rich_presence::{activity, DiscordIpc, DiscordIpcClient};
@@ -6588,8 +6587,10 @@ pub fn run() {
             run_game_installer,
             open_external_target,
             search_trainer_catalog,
+            trainer::search_online_cheat_tables,
             trainer::get_cheat_table,
             trainer::import_cheat_table,
+            trainer::import_online_cheat_table,
             trainer::apply_cheat_value,
             trainer::set_cheat_hold,
             search_online_fix_games,
@@ -6639,10 +6640,6 @@ pub fn run() {
             export_playtime_updates,
             merge_cloud_playtime,
             import_account_state,
-            windows_vpn::list_windows_vpn_profiles,
-            windows_vpn::prepare_windows_vpn,
-            windows_vpn::open_windows_vpn_settings,
-            windows_vpn::open_cloudflare_warp_setup,
             check_github_update,
             install_github_update,
             discord_rpc_enable,

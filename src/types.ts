@@ -40,6 +40,17 @@ export interface CheatTable {
   entries: CheatEntry[];
 }
 
+export interface OnlineCheatTableResult {
+  gameTitle: string;
+  fileName: string;
+  path: string;
+  repository: string;
+  repositoryUrl: string;
+  blobSha: string;
+  sizeBytes: number;
+  stars: number;
+}
+
 export interface ScanResult {
   found: number;
   added: number;

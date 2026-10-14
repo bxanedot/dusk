@@ -922,6 +922,33 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
 .trainer-panel-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .trainer-panel-header h3 { margin: 0; font-size: 12px; }
 .trainer-panel-note { margin: 10px 0; color: var(--subtle); font-size: 9px; line-height: 1.45; }
+.trainer-online-search { display: flex; align-items: center; gap: 8px; margin: 12px 0 8px; }
+.trainer-online-query { display: flex; min-width: 0; min-height: 36px; flex: 1; align-items: center; gap: 8px; padding: 0 10px; border: 1px solid var(--border-strong); border-radius: 10px; color: var(--muted); background: rgba(0, 0, 0, 0.12); }
+.trainer-online-query:focus-within { border-color: rgba(var(--accent-rgb), 0.65); box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.1); }
+.trainer-online-query input { width: 100%; min-width: 0; height: 34px; border: 0; outline: 0; color: var(--text); background: transparent; font-size: 10px; }
+.trainer-online-query input::placeholder { color: var(--subtle); }
+.trainer-online-search-button { min-height: 36px; flex: 0 0 auto; gap: 6px; padding: 0 10px; font-size: 9px; }
+.trainer-online-results { display: grid; gap: 7px; margin: 8px 0 12px; }
+.trainer-online-result { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: 10px; padding: 9px; border: 1px solid var(--border); border-radius: 10px; background: rgba(0, 0, 0, 0.1); }
+.trainer-online-result-copy { display: grid; min-width: 0; gap: 4px; }
+.trainer-online-result-copy strong { overflow: hidden; color: var(--text); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.trainer-online-result-copy > span { overflow: hidden; color: var(--muted); font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+.trainer-online-result-copy small { display: flex; align-items: center; gap: 4px; color: var(--subtle); font-size: 8px; }
+.trainer-online-result-copy small svg { color: var(--accent); }
+.trainer-online-import { min-height: 30px; flex: 0 0 auto; gap: 5px; padding: 0 9px; font-size: 9px; }
+.trainer-online-catalog { display: grid; gap: 10px; margin: 0 0 24px; padding: 18px; border: 1px solid var(--border); border-radius: 15px; background: linear-gradient(145deg, rgba(var(--accent-rgb), 0.06), var(--surface-2) 48%); }
+.trainer-online-catalog-heading h2 { margin: 0; font-size: 14px; }
+.trainer-online-catalog-heading p { margin: 5px 0 0; color: var(--muted); font-size: 10px; line-height: 1.5; }
+.trainer-online-search-catalog { margin: 0; }
+.trainer-online-search-catalog .trainer-online-query { min-height: 42px; padding: 0 13px; }
+.trainer-online-search-catalog .trainer-online-query input { height: 40px; font-size: 11px; }
+.trainer-online-search-catalog .trainer-online-search-button { min-height: 42px; padding: 0 13px; font-size: 10px; }
+.trainer-online-catalog .trainer-online-results { margin: 0; }
+.trainer-online-catalog .trainer-online-result { padding: 11px 12px; }
+.trainer-online-catalog .trainer-online-result-copy strong { font-size: 11px; }
+.trainer-online-catalog .trainer-online-result-copy > span { font-size: 9px; }
+.trainer-online-catalog .trainer-online-result-copy small { font-size: 9px; }
+.trainer-online-catalog .trainer-online-import { min-height: 34px; padding: 0 11px; font-size: 10px; }
 .trainer-table-summary { display: flex; justify-content: space-between; gap: 10px; margin: 12px 0 7px; color: var(--muted); font-size: 9px; }
 .trainer-table-summary span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .trainer-table-summary span:last-child { flex: 0 0 auto; }
@@ -1190,6 +1217,10 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
   .trainer-result { grid-template-columns: minmax(0, 1fr); }
   .trainer-panel-header { align-items: stretch; flex-direction: column; }
   .trainer-panel-header > .button { justify-content: center; }
+  .trainer-online-search { align-items: stretch; flex-direction: column; }
+  .trainer-online-search-button { justify-content: center; }
+  .trainer-online-result { align-items: stretch; flex-direction: column; }
+  .trainer-online-import { justify-content: center; }
   .trainer-entry { align-items: stretch; flex-direction: column; }
   .trainer-entry-actions { justify-content: flex-end; }
 }
@@ -2865,17 +2896,3 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
 .update-release-notes { margin-top: 14px; padding: 12px; border: 1px solid var(--border); border-radius: 9px; }
 .update-release-notes > strong { display: block; font-size: 12px; margin-bottom: 8px; }
 .update-release-notes-text { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 320px; overflow-y: auto; color: var(--subtle); font-size: 11px; line-height: 1.6; }
-
-/* Windows VPN profile integration — compact controls within Settings. */
-.vpn-settings-select {
-  min-width: 150px;
-  max-width: min(46%, 280px);
-  padding: 8px 10px;
-  border: 1px solid var(--border);
-  border-radius: 9px;
-  color: var(--text);
-  background: var(--surface-2);
-  font-size: 11px;
-}
-.vpn-settings-select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.vpn-settings-select:disabled { opacity: .5; }

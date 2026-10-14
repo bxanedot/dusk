@@ -61,6 +61,7 @@ import {
 } from "./components/TrainerCatalogBrowser";
 import { TrainerCatalogPanel, type TrainerCatalogPanelState } from "./components/TrainerCatalogPanel";
 import { TrainerPanel } from "./components/TrainerPanel";
+import { onlineCheatTableKey, type OnlineCheatTableSearchState } from "./components/OnlineCheatTableResults";
 import { api, type ManagedDownload, type OnlineFixHosterFile } from "./lib/api";
 import { syncAccountState } from "./lib/accountSync";
 import { currentDuskAccount, logoutDuskAccount, type DuskAccount } from "./lib/auth";
@@ -73,6 +74,7 @@ import type {
   CollectionRecord,
   CloudSaveStatus,
   GameRecord,
+  OnlineCheatTableResult,
   ProfileRecord,
   ProfileSaveFileState,
   ScreenshotRecord,
@@ -1011,6 +1013,11 @@ export default function App() {
   const [trainerCatalogQuery, setTrainerCatalogQuery] = useState("");
   const [trainerCatalogStatusFilter, setTrainerCatalogStatusFilter] = useState<TrainerCatalogStatusFilter>("all");
   const [trainerCatalogPage, setTrainerCatalogPage] = useState(1);
+  const [catalogOnlineTableState, setCatalogOnlineTableState] = useState<OnlineCheatTableSearchState>("idle");
+  const [catalogOnlineTableResults, setCatalogOnlineTableResults] = useState<OnlineCheatTableResult[]>([]);
+  const [catalogOnlineTableError, setCatalogOnlineTableError] = useState<string | null>(null);
+  const [catalogOnlineTableBusyId, setCatalogOnlineTableBusyId] = useState<string | null>(null);
+  const catalogOnlineTableRequest = useRef(0);
   const trainerCatalogEntriesRef = useRef<TrainerCatalogResult[] | null>(null);
   const trainerCatalogLoadRef = useRef<Promise<TrainerCatalogResult[]> | null>(null);
   const [games, setGames] = useState<GameRecord[]>([]);
@@ -1070,17 +1077,6 @@ export default function App() {
   const [cloudSyncBusy, setCloudSyncBusy] = useState(false);
   const [availableUpdate, setAvailableUpdate] = useState<string | null>(null);
   const [availableUpdateNotes, setAvailableUpdateNotes] = useState<string | null>(null);
-  const [vpnMode, setVpnMode] = useState<"automatic" | "off">(
-    () => localStorage.getItem("dusk-windows-vpn-mode") === "off" ? "off" : "automatic"
-  );
-  const [vpnProfile, setVpnProfile] = useState(
-    () => localStorage.getItem("dusk-windows-vpn-profile") || ""
-  );
-  const [vpnProfiles, setVpnProfiles] = useState<Array<{ name: string; connected: boolean }>>([]);
-  const [vpnMessage, setVpnMessage] = useState("Checking Cloudflare WARP and Windows VPN profiles…");
-  const [vpnBusy, setVpnBusy] = useState(false);
-  const vpnNoticeShownRef = useRef(false);
-
   const [autoScanEnabled, setAutoScanEnabled] = useState(
     () => localStorage.getItem("dusk-auto-scan") !== "false",
   );
@@ -1185,6 +1181,59 @@ export default function App() {
     if (matches.length > 0) return matches;
     const entries = await loadTrainerCatalog();
     return filterTrainerCatalogResults(entries, query, "all").slice(0, 25);
+  }
+
+  async function searchCatalogOnlineTables(query: string) {
+    const requestId = ++catalogOnlineTableRequest.current;
+    setCatalogOnlineTableState("loading");
+    setCatalogOnlineTableResults([]);
+    setCatalogOnlineTableError(null);
+    try {
+      const results = await api.searchOnlineCheatTables(query);
+      if (catalogOnlineTableRequest.current !== requestId) return;
+      setCatalogOnlineTableResults(results);
+      setCatalogOnlineTableState(results.length > 0 ? "results" : "empty");
+    } catch (error) {
+      if (catalogOnlineTableRequest.current !== requestId) return;
+      setCatalogOnlineTableError(readableError(error) || "Could not search online tables.");
+      setCatalogOnlineTableState("error");
+    }
+  }
+
+  async function importCatalogOnlineTable(result: OnlineCheatTableResult) {
+    const catalogMatch = filterTrainerCatalogResults(trainerCatalogEntries, result.gameTitle, "all")[0];
+    const possibleTitles = new Set([
+      result.gameTitle,
+      ...(catalogMatch ? [catalogMatch.title, ...(catalogMatch.aliases ?? [])] : []),
+    ].map(normalizeCatalogText));
+    const matches = games.filter((game) => possibleTitles.has(normalizeCatalogText(game.title)));
+    if (matches.length === 0) {
+      showToast(`Add or scan ${catalogMatch?.title || result.gameTitle} in your Dusk library before importing its table.`, "error");
+      return;
+    }
+    if (matches.length > 1) {
+      showToast(`More than one library entry matches ${catalogMatch?.title || result.gameTitle}. Open it from Library to choose the right installation.`, "error");
+      return;
+    }
+
+    const game = matches[0];
+    try {
+      const currentTable = await api.getCheatTable(game.id);
+      if (currentTable && !window.confirm(`Replace the current table for ${game.title} with ${result.fileName}?`)) return;
+      const key = onlineCheatTableKey(result);
+      setCatalogOnlineTableBusyId(key);
+      const imported = await api.importOnlineCheatTable(game.id, result);
+      const skipped = imported.skippedEntries > 0
+        ? ` ${imported.skippedEntries} unsupported entr${imported.skippedEntries === 1 ? "y was" : "ies were"} skipped.`
+        : "";
+      showToast(`Imported ${imported.entries.length} entries from ${result.fileName} for ${game.title}.${skipped}`);
+      setSelectedGameId(game.id);
+      setView("library");
+    } catch (error) {
+      showToast(readableError(error) || "Could not download or import that table.", "error");
+    } finally {
+      setCatalogOnlineTableBusyId(null);
+    }
   }
 
   function discordPresenceState() {
@@ -1319,68 +1368,6 @@ export default function App() {
     }, 30000);
     return () => window.clearInterval(syncTimer);
   }, [refreshCore]);
-
-  useEffect(() => {
-    let mounted = true;
-    void (async () => {
-      try {
-        const profiles = await api.listWindowsVpnProfiles();
-        if (!mounted) return;
-        setVpnProfiles(profiles);
-        if (vpnMode === "off") {
-          setVpnMessage("Automatic VPN connection is disabled.");
-          return;
-        }
-        // Cloudflare WARP or Windows creates the actual system tunnel.
-        // Dusk only connects an installed and configured provider.
-        const result = await api.prepareWindowsVpn(vpnProfile || undefined);
-        if (!mounted) return;
-        setVpnMessage(result.message);
-        setVpnProfiles(await api.listWindowsVpnProfiles());
-      } catch (error) {
-        if (mounted) setVpnMessage("Could not prepare Windows VPN: " + readableError(error));
-      }
-    })();
-    return () => { mounted = false; };
-  }, [vpnMode, vpnProfile]);
-
-  async function prepareDownloadVpn(): Promise<boolean> {
-    if (vpnMode === "off") return true; // Explicitly chosen direct networking.
-    try {
-      const connection = await api.prepareWindowsVpn(vpnProfile || undefined);
-      setVpnMessage(connection.message);
-      setVpnProfiles(await api.listWindowsVpnProfiles());
-      if (connection.connected) return true;
-      if (!vpnNoticeShownRef.current) {
-        vpnNoticeShownRef.current = true;
-        showToast("Dusk's direct download is blocked until a VPN connects, or VPN mode is set to Off. " + connection.message, "error");
-      }
-      return false;
-    } catch (error) {
-      setVpnMessage("VPN connection check failed: " + readableError(error));
-      if (!vpnNoticeShownRef.current) {
-        vpnNoticeShownRef.current = true;
-        showToast("Dusk's direct download is blocked because VPN status is unavailable. Set VPN mode to Off to allow direct downloads.", "error");
-      }
-      return false;
-    }
-  }
-
-  async function connectVpnNow() {
-    if (vpnBusy || vpnMode === "off") return;
-    setVpnBusy(true);
-    try {
-      const result = await api.prepareWindowsVpn(vpnProfile || undefined);
-      setVpnMessage(result.message);
-      setVpnProfiles(await api.listWindowsVpnProfiles());
-      showToast(result.connected ? "Windows VPN connected." : result.message, result.connected ? "ok" : "error");
-    } catch (error) {
-      setVpnMessage("VPN connection failed: " + readableError(error));
-      showToast(readableError(error), "error");
-    } finally {
-      setVpnBusy(false);
-    }
-  }
 
   useEffect(() => {
     let cancelled = false;
@@ -2133,7 +2120,6 @@ export default function App() {
   }
 
   async function trackOnlineFixDownload(result: WebGameResult, externalBrowser = false, destination = result.url, autoSelect = false) {
-    if (autoSelect && !(await prepareDownloadVpn())) return;
     downloadStabilityRef.current.clear();
     watchAttemptedRef.current.clear();
     watchVerificationCheckedRef.current.clear();
@@ -2185,7 +2171,6 @@ export default function App() {
       await trackOnlineFixDownload(result, true, file.url);
       return;
     }
-    if (!(await prepareDownloadVpn())) return;
     try {
       const created = await api.startManagedDownload(file.url, file.filename, result.title, "online-fix");
       setManagedDownloads((current) => [created, ...current.filter((entry) => entry.id !== created.id)]);
@@ -2234,7 +2219,6 @@ export default function App() {
           setHosterFiles((current) => ({ ...current, [result.url]: files }));
           const multipart = findHosterMultipartBundle(files);
           if (multipart) {
-            if (!(await prepareDownloadVpn())) return;
             const created = await api.startArchiveBundle(result.title, multipart, undefined, "online-fix");
             setManagedDownloads(current => [created, ...current.filter(item => item.id !== created.id)]);
             showToast("Downloading " + multipart.length + " archive volumes with automatic mirror fallback.");
@@ -2273,7 +2257,6 @@ export default function App() {
   // URLs for the same volume are mirrors; numbered volumes are all required.
   async function oneClickGameSourceDownload(result: WebGameResult) {
     if (downloadSourcesBusy || webSource === "online-fix") return;
-    if (!(await prepareDownloadVpn())) return;
     const source = webSource;
     setDownloadSourcesBusy(result.url);
     try {
@@ -2879,7 +2862,13 @@ export default function App() {
                   statusFilter={trainerCatalogStatusFilter}
                   page={trainerCatalogPage}
                   errorMessage={trainerCatalogError}
+                  onlineTableState={catalogOnlineTableState}
+                  onlineTableResults={catalogOnlineTableResults}
+                  onlineTableError={catalogOnlineTableError}
+                  onlineTableBusyId={catalogOnlineTableBusyId}
                   onSelectGame={openCatalogGame}
+                  onSearchOnlineTables={(query) => void searchCatalogOnlineTables(query)}
+                  onImportOnlineTable={(result) => void importCatalogOnlineTable(result)}
                   onQueryChange={(nextQuery) => {
                     setTrainerCatalogQuery(nextQuery);
                     setTrainerCatalogPage(1);
@@ -3263,9 +3252,6 @@ export default function App() {
                       <button type="button" className="settings-nav-item" onClick={() => scrollToSettingsSection("settings-profiles")}>
                         <Layers3 size={15} /> Profiles &amp; saves
                       </button>
-                      <button type="button" className="settings-nav-item" onClick={() => scrollToSettingsSection("settings-network")}>
-                        <ShieldCheck size={15} /> Network
-                      </button>
                       <button type="button" className="settings-nav-item" onClick={() => scrollToSettingsSection("settings-appearance")}>
                         <Moon size={15} /> Appearance
                       </button>
@@ -3284,83 +3270,6 @@ export default function App() {
                     </nav>
 
                     <div className="settings-content">
-                  <section id="settings-network" className="settings-card" aria-label="VPN settings">
-                    <div className="settings-card-head">
-                      <ShieldCheck size={20} />
-                      <div>
-                        <h3>VPN · Cloudflare WARP &amp; Windows</h3>
-                        <p>Automatic uses the official Cloudflare WARP client when installed, or an existing Windows VPN profile. VPN traffic is routed by Windows, not by a webpage proxy.</p>
-                      </div>
-                    </div>
-                    <div className="setting-row">
-                      <div>
-                        <strong>Connection mode</strong>
-                        <span>Searches and game pages use your current connection. Automatic checks for a VPN before Dusk starts direct archive downloads; without one, those downloads are blocked until you connect or choose Off.</span>
-                      </div>
-                      <select className="vpn-settings-select" value={vpnMode} aria-label="VPN connection mode"
-                        onChange={event => {
-                          const mode = event.target.value === "off" ? "off" : "automatic";
-                          setVpnMode(mode);
-                          localStorage.setItem("dusk-windows-vpn-mode", mode);
-                          vpnNoticeShownRef.current = false;
-                        }}>
-                        <option value="automatic">Automatic</option>
-                        <option value="off">Off</option>
-                      </select>
-                    </div>
-                    <div className="setting-row">
-                      <div>
-                        <strong>VPN provider / profile</strong>
-                        <span>Automatic prefers an active tunnel, then Cloudflare WARP if installed. Choose a provider here to override.</span>
-                      </div>
-                      <select className="vpn-settings-select" value={vpnProfile}
-                        aria-label="VPN provider and profile" disabled={vpnMode === "off"}
-                        onChange={event => {
-                          setVpnProfile(event.target.value);
-                          localStorage.setItem("dusk-windows-vpn-profile", event.target.value);
-                          vpnNoticeShownRef.current = false;
-                        }}>
-                        <option value="">Automatic selection</option>
-                        {vpnProfiles.map(profile => (
-                          <option value={profile.name} key={profile.name}>
-                            {profile.name}{profile.connected ? " · Connected" : ""}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="setting-row">
-                      <div>
-                        <strong>VPN status</strong>
-                        <span role="status">{vpnMode === "off" ? "VPN integration is off. Dusk will not connect a VPN." : vpnMessage}</span>
-                      </div>
-                      <button className="button secondary" disabled={vpnBusy || vpnMode === "off"}
-                        onClick={() => void connectVpnNow()}>
-                        <ShieldCheck size={15} />
-                        {vpnBusy ? "Connecting…" : "Connect now"}
-                      </button>
-                    </div>
-                    <div className="setting-row">
-                      <div>
-                        <strong>Set up a real VPN</strong>
-                        <span>Install Cloudflare WARP once, then finish its first-run registration. Dusk can automatically connect it afterwards. Cloudflare may not make every download host accessible.</span>
-                      </div>
-                      <button className="button secondary"
-                        onClick={() => void api.openCloudflareWarpSetup().catch(error => showToast(readableError(error), "error"))}>
-                        <ExternalLink size={15} /> Install Cloudflare WARP
-                      </button>
-                    </div>
-                    <div className="setting-row">
-                      <div>
-                        <strong>Other VPN providers</strong>
-                        <span>Existing Windows VPN profiles remain supported. VPN routing can affect other apps. Dusk never stores provider credentials.</span>
-                      </div>
-                      <button className="button secondary"
-                        onClick={() => void api.openWindowsVpnSettings().catch(error => showToast(readableError(error), "error"))}>
-                        <ExternalLink size={15} /> Windows VPN settings
-                      </button>
-                    </div>
-                  </section>
-
                   {!guestMode && (
                     <div id="settings-account" className="settings-section-anchor">
                       <AccountProfileSettings onToast={showToast} />

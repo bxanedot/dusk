@@ -1,7 +1,8 @@
-import { Check, Gamepad2, LoaderCircle, Upload, Zap } from "lucide-react";
-import { useEffect, useState } from "react";
-import type { CheatTable } from "../types";
+import { Check, Gamepad2, LoaderCircle, Search, Upload, Zap } from "lucide-react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
+import type { CheatTable, OnlineCheatTableResult } from "../types";
 import { api } from "../lib/api";
+import { onlineCheatTableKey, OnlineCheatTableResults, type OnlineCheatTableSearchState } from "./OnlineCheatTableResults";
 
 type TrainerPanelProps = {
   gameId: string;
@@ -16,6 +17,11 @@ export function TrainerPanel(props: TrainerPanelProps) {
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [heldEntries, setHeldEntries] = useState<Set<string>>(() => new Set());
   const [error, setError] = useState<string | null>(null);
+  const [onlineQuery, setOnlineQuery] = useState(props.gameTitle);
+  const [onlineState, setOnlineState] = useState<OnlineCheatTableSearchState>("idle");
+  const [onlineResults, setOnlineResults] = useState<OnlineCheatTableResult[]>([]);
+  const [onlineError, setOnlineError] = useState<string | null>(null);
+  const onlineRequest = useRef(0);
 
   useEffect(() => {
     let current = true;
@@ -31,6 +37,34 @@ export function TrainerPanel(props: TrainerPanelProps) {
       .finally(() => { if (current) setLoading(false); });
     return () => { current = false; };
   }, [props.gameId]);
+
+  useEffect(() => {
+    onlineRequest.current += 1;
+    setOnlineQuery(props.gameTitle);
+    setOnlineState("idle");
+    setOnlineResults([]);
+    setOnlineError(null);
+    return () => { onlineRequest.current += 1; };
+  }, [props.gameId, props.gameTitle]);
+
+  async function searchOnlineTables(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const requestId = ++onlineRequest.current;
+    setOnlineState("loading");
+    setOnlineResults([]);
+    setOnlineError(null);
+    try {
+      const results = await api.searchOnlineCheatTables(onlineQuery);
+      if (onlineRequest.current !== requestId) return;
+      setOnlineResults(results);
+      setOnlineState(results.length > 0 ? "results" : "empty");
+    } catch (reason) {
+      if (onlineRequest.current !== requestId) return;
+      const message = typeof reason === "string" ? reason : "Could not search online tables.";
+      setOnlineError(message);
+      setOnlineState("error");
+    }
+  }
 
   async function importTable() {
     setBusyAction("import");
@@ -49,6 +83,32 @@ export function TrainerPanel(props: TrainerPanelProps) {
       props.onToast(`Imported ${imported.entries.length} entries for ${props.gameTitle}.${skipped}`);
     } catch (reason) {
       const message = typeof reason === "string" ? reason : "Could not import that table.";
+      setError(message);
+      props.onToast(message, "error");
+    } finally {
+      setBusyAction(null);
+    }
+  }
+
+  async function importOnlineTable(result: OnlineCheatTableResult) {
+    if (table && !window.confirm(`Replace the current table for ${props.gameTitle} with ${result.fileName}?`)) return;
+    const actionId = onlineCheatTableKey(result);
+    setBusyAction(actionId);
+    setError(null);
+    try {
+      const imported = await api.importOnlineCheatTable(props.gameId, result);
+      await Promise.all(Array.from(heldEntries, (entryId) =>
+        api.setCheatHold(props.gameId, entryId, false).catch(() => undefined),
+      ));
+      setTable(imported);
+      setHeldEntries(new Set());
+      setError(null);
+      const skipped = imported.skippedEntries > 0
+        ? ` ${imported.skippedEntries} unsupported entr${imported.skippedEntries === 1 ? "y was" : "ies were"} skipped.`
+        : "";
+      props.onToast(`Imported ${imported.entries.length} entries from ${result.fileName} for ${props.gameTitle}.${skipped}`);
+    } catch (reason) {
+      const message = typeof reason === "string" ? reason : "Could not download or import that table.";
       setError(message);
       props.onToast(message, "error");
     } finally {
@@ -111,6 +171,30 @@ export function TrainerPanel(props: TrainerPanelProps) {
       <p className="trainer-panel-note">
         For offline, single-player use. Dusk loads numeric values only; scripts, pointer paths, and custom types are skipped.
       </p>
+      <form className="trainer-online-search" onSubmit={(event) => void searchOnlineTables(event)}>
+        <label className="trainer-online-query">
+          <Search size={15} aria-hidden="true" />
+          <input
+            type="search"
+            value={onlineQuery}
+            onChange={(event) => setOnlineQuery(event.target.value)}
+            placeholder="Search public .CT tables"
+            aria-label={`Search online .CT tables for ${props.gameTitle}`}
+            autoComplete="off"
+          />
+        </label>
+        <button type="submit" className="button secondary trainer-online-search-button" disabled={onlineState === "loading" || busyAction !== null}>
+          {onlineState === "loading" ? <LoaderCircle size={14} className="spin" /> : <Search size={14} />}
+          {onlineState === "loading" ? "Searching…" : "Search .CT online"}
+        </button>
+      </form>
+      <OnlineCheatTableResults
+        state={onlineState}
+        results={onlineResults}
+        errorMessage={onlineError}
+        busyId={busyAction}
+        onImport={(result) => void importOnlineTable(result)}
+      />
       {!props.hasExecutable && (
         <p className="trainer-panel-note">Add this game's executable in the Dusk library before applying or holding values.</p>
       )}

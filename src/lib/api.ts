@@ -9,6 +9,7 @@ import type {
   CloudSyncAllResult,
   GameRecord,
   LaunchResult,
+  OnlineCheatTableResult,
   ProfileRecord,
   ProfileSaveFileState,
   ScanResult,
@@ -29,9 +30,6 @@ export type OnlineFixHosterFile = {
 };
 
 export type GameArchiveBundle = { label: string; parts: Array<{ filename: string; mirrors: string[] }> };
-
-export type WindowsVpnProfile = { name: string; connected: boolean };
-export type WindowsVpnConnection = { connected: boolean; profile: string | null; message: string };
 
 export type ManagedDownload = {
   id: string;
@@ -70,8 +68,18 @@ export const api = {
   listTrainerCatalog: () => invoke<TrainerCatalogResult[]>("list_trainer_catalog"),
   searchTrainerCatalog: (query: string) =>
     invoke<TrainerCatalogResult[]>("search_trainer_catalog", { query }),
+  searchOnlineCheatTables: (query: string) =>
+    invoke<OnlineCheatTableResult[]>("search_online_cheat_tables", { query }),
   getCheatTable: (gameId: string) => invoke<CheatTable | null>("get_cheat_table", { gameId }),
   importCheatTable: (gameId: string) => invoke<CheatTable | null>("import_cheat_table", { gameId }),
+  importOnlineCheatTable: (gameId: string, result: OnlineCheatTableResult) =>
+    invoke<CheatTable>("import_online_cheat_table", {
+      gameId,
+      repository: result.repository,
+      blobSha: result.blobSha,
+      fileName: result.fileName,
+      sizeBytes: result.sizeBytes,
+    }),
   applyCheatValue: (gameId: string, entryId: string) =>
     invoke<void>("apply_cheat_value", { gameId, entryId }),
   setCheatHold: (gameId: string, entryId: string, enabled: boolean) =>
@@ -105,12 +113,6 @@ export const api = {
     invoke<void>("run_game_installer", { installerPath }),
   discoverGameSourceArchives: (source: "game3rb" | "fitgirl", listingUrl: string) =>
     invoke<GameArchiveBundle[]>("discover_game_source_archives", { source, listingUrl }),
-  openWindowsVpnSettings: () => invoke<void>("open_windows_vpn_settings"),
-  openCloudflareWarpSetup: () => invoke<void>("open_cloudflare_warp_setup"),
-  listWindowsVpnProfiles: () =>
-    invoke<WindowsVpnProfile[]>("list_windows_vpn_profiles"),
-  prepareWindowsVpn: (profile?: string) =>
-    invoke<WindowsVpnConnection>("prepare_windows_vpn", { profile: profile || null }),
   searchGameSource: (source: "game3rb" | "fitgirl", query: string) =>
     invoke<Array<{ title: string; url: string; description: string }>>(
       "search_game_source", { source, query },
