@@ -141,6 +141,8 @@ export const api = {
     invoke<void>("open_external_target", { target }),
   openNexusModsSearch: (query: string) =>
     invoke<void>("open_nexus_mods_search", { query }),
+  openCheatTableDirectorySearch: (query: string) =>
+    invoke<void>("open_cheat_table_directory_search", { query }),
   addManualGame: (title: string, exePath: string) =>
     invoke<GameRecord>("add_manual_game", { title, exePath }),
   setFavorite: (gameId: string, favorite: boolean) =>

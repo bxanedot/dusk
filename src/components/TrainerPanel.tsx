@@ -1,4 +1,4 @@
-import { Check, ExternalLink, Gamepad2, LoaderCircle, Search, Upload, Zap } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, ExternalLink, Gamepad2, LoaderCircle, Search, Upload, Zap } from "lucide-react";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import type { CheatTable, OnlineCheatTableResult } from "../types";
 import { api } from "../lib/api";
@@ -11,11 +11,14 @@ type TrainerPanelProps = {
   onToast: (message: string, type?: "ok" | "error") => void;
 };
 
+const ENTRY_PAGE_SIZE = 100;
+
 export function TrainerPanel(props: TrainerPanelProps) {
   const [table, setTable] = useState<CheatTable | null>(null);
   const [loading, setLoading] = useState(true);
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [heldEntries, setHeldEntries] = useState<Set<string>>(() => new Set());
+  const [entryPage, setEntryPage] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const [onlineQuery, setOnlineQuery] = useState(props.gameTitle);
   const [onlineState, setOnlineState] = useState<OnlineCheatTableSearchState>("idle");
@@ -29,6 +32,7 @@ export function TrainerPanel(props: TrainerPanelProps) {
     setError(null);
     setTable(null);
     setHeldEntries(new Set());
+    setEntryPage(1);
     void api.getCheatTable(props.gameId)
       .then((result) => { if (current) setTable(result); })
       .catch((reason) => {
@@ -37,6 +41,13 @@ export function TrainerPanel(props: TrainerPanelProps) {
       .finally(() => { if (current) setLoading(false); });
     return () => { current = false; };
   }, [props.gameId]);
+
+  const entryPageCount = table ? Math.max(1, Math.ceil(table.entries.length / ENTRY_PAGE_SIZE)) : 1;
+  const currentEntryPage = Math.min(entryPage, entryPageCount);
+  const visibleEntries = table?.entries.slice(
+    (currentEntryPage - 1) * ENTRY_PAGE_SIZE,
+    currentEntryPage * ENTRY_PAGE_SIZE,
+  ) ?? [];
 
   useEffect(() => {
     onlineRequest.current += 1;
@@ -75,6 +86,15 @@ export function TrainerPanel(props: TrainerPanelProps) {
     }
   }
 
+  async function searchTableDirectory() {
+    try {
+      await api.openCheatTableDirectorySearch(onlineQuery);
+    } catch (reason) {
+      const message = typeof reason === "string" ? reason : "Could not open table directory search.";
+      props.onToast(message, "error");
+    }
+  }
+
   async function importTable() {
     setBusyAction("import");
     setError(null);
@@ -85,6 +105,7 @@ export function TrainerPanel(props: TrainerPanelProps) {
         api.setCheatHold(props.gameId, entryId, false).catch(() => undefined),
       ));
       setTable(imported);
+      setEntryPage(1);
       setHeldEntries(new Set());
       const skipped = imported.skippedEntries > 0
         ? ` ${imported.skippedEntries} unsupported entr${imported.skippedEntries === 1 ? "y was" : "ies were"} skipped.`
@@ -110,6 +131,7 @@ export function TrainerPanel(props: TrainerPanelProps) {
         api.setCheatHold(props.gameId, entryId, false).catch(() => undefined),
       ));
       setTable(imported);
+      setEntryPage(1);
       setHeldEntries(new Set());
       setError(null);
       const skipped = imported.skippedEntries > 0
@@ -199,6 +221,9 @@ export function TrainerPanel(props: TrainerPanelProps) {
         <button type="button" className="button secondary trainer-online-search-button trainer-online-nexus-button" onClick={() => void searchNexusMods()} disabled={!onlineQuery.trim()} title="Open a free search on Nexus Mods in your browser">
           <ExternalLink size={14} /> Nexus Mods
         </button>
+        <button type="button" className="button secondary trainer-online-search-button trainer-online-directory-button" onClick={() => void searchTableDirectory()} disabled={!onlineQuery.trim()} title="Search the free table directory listed by the community index">
+          <ExternalLink size={14} /> CheatTable.net
+        </button>
       </form>
       <OnlineCheatTableResults
         state={onlineState}
@@ -231,7 +256,7 @@ export function TrainerPanel(props: TrainerPanelProps) {
             <span>{table.entries.length} entries</span>
           </div>
           <div className="trainer-entry-list">
-            {table.entries.map((entry) => {
+            {visibleEntries.map((entry) => {
               const busy = busyAction === entry.id;
               const held = heldEntries.has(entry.id);
               return (
@@ -267,6 +292,29 @@ export function TrainerPanel(props: TrainerPanelProps) {
               );
             })}
           </div>
+          {entryPageCount > 1 && (
+            <nav className="trainer-catalog-pagination trainer-entry-pagination" aria-label="Table entry pages">
+              <button
+                type="button"
+                className="button secondary"
+                onClick={() => setEntryPage(currentEntryPage - 1)}
+                disabled={currentEntryPage <= 1 || busyAction !== null}
+                aria-label="Previous table entry page"
+              >
+                <ChevronLeft size={15} /> Previous
+              </button>
+              <span>Entries {((currentEntryPage - 1) * ENTRY_PAGE_SIZE + 1).toLocaleString()}–{Math.min(currentEntryPage * ENTRY_PAGE_SIZE, table.entries.length).toLocaleString()} of {table.entries.length.toLocaleString()}</span>
+              <button
+                type="button"
+                className="button secondary"
+                onClick={() => setEntryPage(currentEntryPage + 1)}
+                disabled={currentEntryPage >= entryPageCount || busyAction !== null}
+                aria-label="Next table entry page"
+              >
+                Next page <ChevronRight size={15} />
+              </button>
+            </nav>
+          )}
         </>
       )}
     </section>

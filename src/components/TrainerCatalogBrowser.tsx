@@ -21,6 +21,7 @@ type TrainerCatalogBrowserProps = {
   onSelectGame: (result: TrainerCatalogResult) => void;
   onSearchOnlineTables: (query: string) => void;
   onSearchNexusMods: (query: string) => void;
+  onSearchTableDirectory: (query: string) => void;
   onImportOnlineTable: (result: OnlineCheatTableResult) => void;
   onQueryChange: (query: string) => void;
   onStatusFilterChange: (filter: TrainerCatalogStatusFilter) => void;
@@ -155,7 +156,7 @@ export function TrainerCatalogBrowser(props: TrainerCatalogBrowserProps) {
         <div className="trainer-online-catalog-heading">
           <div>
             <h2 id="trainer-online-catalog-title">Online .CT tables</h2>
-            <p>Search public GitHub repositories. Dusk imports supported numeric entries and skips scripts and pointer paths. Community tables may be outdated, so check the source and game version.</p>
+            <p>Search public GitHub repositories, then browse free table directories such as CheatTable.net. Dusk imports supported numeric entries and skips scripts and pointer paths. Check the source and game version before importing.</p>
           </div>
         </div>
         <form className="trainer-online-search trainer-online-search-catalog" onSubmit={searchOnlineTables}>
@@ -176,6 +177,9 @@ export function TrainerCatalogBrowser(props: TrainerCatalogBrowserProps) {
           </button>
           <button type="button" className="button secondary trainer-online-search-button trainer-online-nexus-button" onClick={() => props.onSearchNexusMods(onlineQuery)} disabled={!onlineQuery.trim()} title="Open a free search on Nexus Mods in your browser">
             <ExternalLink size={14} /> Nexus Mods
+          </button>
+          <button type="button" className="button secondary trainer-online-search-button trainer-online-directory-button" onClick={() => props.onSearchTableDirectory(onlineQuery)} disabled={!onlineQuery.trim()} title="Search the free table directory listed by the community index">
+            <ExternalLink size={14} /> CheatTable.net
           </button>
         </form>
         <OnlineCheatTableResults
