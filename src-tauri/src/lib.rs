@@ -3571,6 +3571,37 @@ fn open_external_target(target: String) -> Result<(), String> {
     Ok(())
 }
 
+#[cfg(target_os = "windows")]
+#[tauri::command]
+fn open_nexus_mods_search(query: String) -> Result<(), String> {
+    let query = query.trim();
+    if query.is_empty() || query.chars().count() > 120 || query.chars().any(char::is_control) {
+        return Err("Enter a game title with no more than 120 characters.".into());
+    }
+
+    let search_terms = format!(
+        "{query} cheat engine OR ct files OR cheat tables OR .ct file OR cheat table"
+    );
+    let mut url = reqwest::Url::parse("https://www.nexusmods.com/search/")
+        .map_err(|error| format!("Could not prepare Nexus Mods search: {error}"))?;
+    url.query_pairs_mut()
+        .append_pair("gsearch", &search_terms)
+        .append_pair("gsearchtype", "mods");
+
+    hidden_windows_command("rundll32")
+        .args(["url.dll,FileProtocolHandler", url.as_str()])
+        .spawn()
+        .map_err(|error| format!("Could not open Nexus Mods search: {error}"))?;
+
+    Ok(())
+}
+
+#[cfg(not(target_os = "windows"))]
+#[tauri::command]
+fn open_nexus_mods_search(_query: String) -> Result<(), String> {
+    Err("Opening Nexus Mods search is currently implemented for Windows.".into())
+}
+
 #[cfg(not(target_os = "windows"))]
 #[tauri::command]
 fn open_external_target(_target: String) -> Result<(), String> {
@@ -6586,6 +6617,7 @@ pub fn run() {
             download_manager::cancel_managed_download,
             run_game_installer,
             open_external_target,
+            open_nexus_mods_search,
             search_trainer_catalog,
             trainer::search_online_cheat_tables,
             trainer::get_cheat_table,

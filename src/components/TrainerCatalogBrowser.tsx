@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Gamepad2, LoaderCircle, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, ExternalLink, Gamepad2, LoaderCircle, Search } from "lucide-react";
 import { type FormEvent, useState } from "react";
 import type { OnlineCheatTableResult, TrainerCatalogResult } from "../types";
 import { OnlineCheatTableResults, type OnlineCheatTableSearchState } from "./OnlineCheatTableResults";
@@ -20,6 +20,7 @@ type TrainerCatalogBrowserProps = {
   onlineTableBusyId: string | null;
   onSelectGame: (result: TrainerCatalogResult) => void;
   onSearchOnlineTables: (query: string) => void;
+  onSearchNexusMods: (query: string) => void;
   onImportOnlineTable: (result: OnlineCheatTableResult) => void;
   onQueryChange: (query: string) => void;
   onStatusFilterChange: (filter: TrainerCatalogStatusFilter) => void;
@@ -172,6 +173,9 @@ export function TrainerCatalogBrowser(props: TrainerCatalogBrowserProps) {
           <button type="submit" className="button secondary trainer-online-search-button" disabled={props.onlineTableState === "loading" || props.onlineTableBusyId !== null}>
             {props.onlineTableState === "loading" ? <LoaderCircle size={14} className="spin" /> : <Search size={14} />}
             {props.onlineTableState === "loading" ? "Searching…" : "Search .CT online"}
+          </button>
+          <button type="button" className="button secondary trainer-online-search-button trainer-online-nexus-button" onClick={() => props.onSearchNexusMods(onlineQuery)} disabled={!onlineQuery.trim()} title="Open a free search on Nexus Mods in your browser">
+            <ExternalLink size={14} /> Nexus Mods
           </button>
         </form>
         <OnlineCheatTableResults

@@ -1200,6 +1200,14 @@ export default function App() {
     }
   }
 
+  async function searchNexusMods(query: string) {
+    try {
+      await api.openNexusModsSearch(query);
+    } catch (error) {
+      showToast(readableError(error) || "Could not open Nexus Mods search.", "error");
+    }
+  }
+
   async function importCatalogOnlineTable(result: OnlineCheatTableResult) {
     const catalogMatch = filterTrainerCatalogResults(trainerCatalogEntries, result.gameTitle, "all")[0];
     const possibleTitles = new Set([
@@ -2868,6 +2876,7 @@ export default function App() {
                   onlineTableBusyId={catalogOnlineTableBusyId}
                   onSelectGame={openCatalogGame}
                   onSearchOnlineTables={(query) => void searchCatalogOnlineTables(query)}
+                  onSearchNexusMods={(query) => void searchNexusMods(query)}
                   onImportOnlineTable={(result) => void importCatalogOnlineTable(result)}
                   onQueryChange={(nextQuery) => {
                     setTrainerCatalogQuery(nextQuery);

@@ -18,7 +18,7 @@ use tauri::AppHandle;
 use super::{app_data_dir, get_game, open_database};
 
 const MAX_TABLE_BYTES: u64 = 10 * 1024 * 1024;
-const MAX_TABLE_ENTRIES: usize = 500;
+const MAX_TABLE_ENTRIES: usize = 10_000;
 const MAX_GITHUB_SEARCH_RESULTS: usize = 8;
 const MAX_GITHUB_TREE_BYTES: u64 = 8 * 1024 * 1024;
 

@@ -1,4 +1,4 @@
-import { Check, Gamepad2, LoaderCircle, Search, Upload, Zap } from "lucide-react";
+import { Check, ExternalLink, Gamepad2, LoaderCircle, Search, Upload, Zap } from "lucide-react";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import type { CheatTable, OnlineCheatTableResult } from "../types";
 import { api } from "../lib/api";
@@ -63,6 +63,15 @@ export function TrainerPanel(props: TrainerPanelProps) {
       const message = typeof reason === "string" ? reason : "Could not search online tables.";
       setOnlineError(message);
       setOnlineState("error");
+    }
+  }
+
+  async function searchNexusMods() {
+    try {
+      await api.openNexusModsSearch(onlineQuery);
+    } catch (reason) {
+      const message = typeof reason === "string" ? reason : "Could not open Nexus Mods search.";
+      props.onToast(message, "error");
     }
   }
 
@@ -186,6 +195,9 @@ export function TrainerPanel(props: TrainerPanelProps) {
         <button type="submit" className="button secondary trainer-online-search-button" disabled={onlineState === "loading" || busyAction !== null}>
           {onlineState === "loading" ? <LoaderCircle size={14} className="spin" /> : <Search size={14} />}
           {onlineState === "loading" ? "Searching…" : "Search .CT online"}
+        </button>
+        <button type="button" className="button secondary trainer-online-search-button trainer-online-nexus-button" onClick={() => void searchNexusMods()} disabled={!onlineQuery.trim()} title="Open a free search on Nexus Mods in your browser">
+          <ExternalLink size={14} /> Nexus Mods
         </button>
       </form>
       <OnlineCheatTableResults
