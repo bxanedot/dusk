@@ -13,6 +13,7 @@ use std::{
     collections::{hash_map::DefaultHasher, HashMap, HashSet},
     env,
     fs,
+    io::Read,
     path::{Path, PathBuf},
     hash::{Hash, Hasher},
     process::Command,
@@ -2882,6 +2883,278 @@ struct OnlineFixSearchResult {
     title: String,
     url: String,
     description: String,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+struct TrainerCatalogResult {
+    title: String,
+    title_id: Option<String>,
+    game_id: Option<String>,
+    platforms: Vec<String>,
+    cheat_count: Option<u32>,
+    updated: Option<String>,
+    status: String,
+}
+
+const TRAINER_CATALOG_MAX_QUERY_CHARS: usize = 120;
+const TRAINER_CATALOG_MAX_RESPONSE_BYTES: usize = 2 * 1024 * 1024;
+const TRAINER_CATALOG_MAX_RESULTS: usize = 25;
+
+fn build_trainer_catalog_url(query: &str) -> Result<reqwest::Url, String> {
+    let query = query.trim();
+    if query.is_empty() || query.chars().count() > TRAINER_CATALOG_MAX_QUERY_CHARS {
+        return Err("Enter a game title with no more than 120 characters.".into());
+    }
+    if query.chars().any(char::is_control) {
+        return Err("Search text contains unsupported characters.".into());
+    }
+
+    let mut url = reqwest::Url::parse("https://www.wemod.com/cheats")
+        .map_err(|_| "Trainer catalog search could not be prepared.".to_string())?;
+    url.query_pairs_mut().append_pair("q", query);
+    Ok(url)
+}
+
+fn valid_trainer_catalog_path(path: &str) -> bool {
+    let Some(slug) = path.strip_prefix("/cheats/") else {
+        return false;
+    };
+    !slug.is_empty()
+        && slug.ends_with("-trainers")
+        && !slug.contains("//")
+        && slug
+            .bytes()
+            .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'-' || byte == b'/')
+}
+
+fn canonical_positive_id(value: &str) -> Option<String> {
+    if value.is_empty() || !value.bytes().all(|byte| byte.is_ascii_digit()) {
+        return None;
+    }
+    let value = value.parse::<u64>().ok()?;
+    (value > 0).then(|| value.to_string())
+}
+
+fn trainer_catalog_ids_from_thumbnail(row: &str) -> (Option<String>, Option<String>) {
+    let src_re = Regex::new(r#"(?s)<img\b[^>]*\bsrc="([^"]+)""#).expect("constant regex");
+    let Some(src) = src_re.captures(row).and_then(|captures| captures.get(1)) else {
+        return (None, None);
+    };
+    let Ok(url) = reqwest::Url::parse(src.as_str()) else {
+        return (None, None);
+    };
+    if url.scheme() != "https" || url.host_str() != Some("api-cdn.wemod.com") {
+        return (None, None);
+    }
+    let Some(path) = url.path().strip_prefix("/title_thumbnails/") else {
+        return (None, None);
+    };
+    let mut segments = path.split('/');
+    let Some(title_id) = segments.next().and_then(canonical_positive_id) else {
+        return (None, None);
+    };
+    let Some(game_id) = segments.next().and_then(canonical_positive_id) else {
+        return (None, None);
+    };
+    if segments.next().is_none() {
+        return (None, None);
+    }
+    (Some(title_id), Some(game_id))
+}
+
+fn decode_trainer_catalog_entities(value: &str) -> String {
+    let entity_re = Regex::new(r"&(#(?:x[0-9a-fA-F]+|[0-9]+)|[A-Za-z]+);").expect("constant regex");
+    entity_re
+        .replace_all(value, |captures: &regex::Captures<'_>| {
+            let entity = &captures[1];
+            match entity {
+                "amp" => "&".to_string(),
+                "quot" => "\"".to_string(),
+                "apos" => "'".to_string(),
+                "lt" => "<".to_string(),
+                "gt" => ">".to_string(),
+                _ if entity.starts_with("#x") => u32::from_str_radix(&entity[2..], 16)
+                    .ok()
+                    .and_then(char::from_u32)
+                    .map(|character| character.to_string())
+                    .unwrap_or_else(|| captures[0].to_string()),
+                _ if entity.starts_with('#') => entity[1..]
+                    .parse::<u32>()
+                    .ok()
+                    .and_then(char::from_u32)
+                    .map(|character| character.to_string())
+                    .unwrap_or_else(|| captures[0].to_string()),
+                _ => captures[0].to_string(),
+            }
+        })
+        .into_owned()
+}
+
+fn trainer_catalog_text(fragment: &str) -> String {
+    let tag_re = Regex::new(r"(?s)<[^>]*>").expect("constant regex");
+    let without_tags = tag_re.replace_all(fragment, " ");
+    let decoded = decode_trainer_catalog_entities(&without_tags);
+    decoded.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
+fn trainer_catalog_cell<'a>(row: &'a str, name: &str) -> Result<&'a str, String> {
+    let pattern = format!(r#"(?s)<div class="col {name}">\s*(.*?)</div>"#);
+    let cell_re = Regex::new(&pattern)
+        .map_err(|_| "Trainer catalog data could not be read.".to_string())?;
+    cell_re
+        .captures(row)
+        .and_then(|captures| captures.get(1))
+        .map(|capture| capture.as_str())
+        .ok_or_else(|| "Trainer catalog data could not be read.".to_string())
+}
+
+fn parse_trainer_catalog_results(html: &str) -> Result<Vec<TrainerCatalogResult>, String> {
+    if !html.contains("class=\"search-results\"") {
+        return Err("Trainer catalog data could not be read.".into());
+    }
+    let row_re = Regex::new(r#"(?s)<a\s+class="game-result"\s+href="([^"]+)"[^>]*>(.*?)</a>"#)
+        .map_err(|_| "Trainer catalog data could not be read.".to_string())?;
+    let rows = row_re.captures_iter(html).collect::<Vec<_>>();
+    if rows.is_empty() {
+        if html.contains("class=\"no-results-message\"") {
+            return Ok(Vec::new());
+        }
+        return Err("Trainer catalog data could not be read.".into());
+    }
+
+    let platform_re = Regex::new(
+        r#"(?s)<span class="platform">\s*<img\b[^>]*>\s*<span>(.*?)</span>\s*</span>"#,
+    )
+    .map_err(|_| "Trainer catalog data could not be read.".to_string())?;
+    let status_re = Regex::new(r"(?s)<span>(.*?)</span>")
+        .map_err(|_| "Trainer catalog data could not be read.".to_string())?;
+    let mut results = Vec::new();
+
+    for captures in rows.into_iter().take(TRAINER_CATALOG_MAX_RESULTS) {
+        let path = captures.get(1).unwrap().as_str();
+        let row = captures.get(2).unwrap().as_str();
+        if !valid_trainer_catalog_path(path) {
+            return Err("Trainer catalog data could not be read.".into());
+        }
+
+        let title = trainer_catalog_text(trainer_catalog_cell(row, "name")?);
+        if title.is_empty() {
+            return Err("Trainer catalog data could not be read.".into());
+        }
+        let count_text = trainer_catalog_text(trainer_catalog_cell(row, "cheats")?);
+        let cheat_count = if count_text.is_empty() {
+            None
+        } else {
+            count_text.replace(',', "").parse::<u32>().ok()
+        };
+        let updated_text = trainer_catalog_text(trainer_catalog_cell(row, "updated")?);
+        let updated = (!updated_text.is_empty()).then_some(updated_text);
+        let platform_cell = trainer_catalog_cell(row, "platforms")?;
+        let platforms = platform_re
+            .captures_iter(platform_cell)
+            .filter_map(|captures| {
+                let platform = trainer_catalog_text(captures.get(1)?.as_str());
+                (!platform.is_empty()).then_some(platform)
+            })
+            .collect::<Vec<_>>();
+        let status_cell = trainer_catalog_cell(row, "status")?;
+        let status_text = status_re
+            .captures(status_cell)
+            .and_then(|captures| captures.get(1))
+            .map(|capture| trainer_catalog_text(capture.as_str()))
+            .ok_or_else(|| "Trainer catalog data could not be read.".to_string())?;
+        let status = match status_text.to_ascii_lowercase().as_str() {
+            "available" => "available",
+            "unsupported" => "unsupported",
+            "unavailable" => "unavailable",
+            _ => "unknown",
+        }
+        .to_string();
+        let (title_id, game_id) = trainer_catalog_ids_from_thumbnail(row);
+
+        results.push(TrainerCatalogResult {
+            title,
+            title_id,
+            game_id,
+            platforms,
+            cheat_count,
+            updated,
+            status,
+        });
+    }
+
+    Ok(results)
+}
+
+fn build_trainer_play_uri(title_id: Option<&str>, game_id: Option<&str>) -> Result<String, String> {
+    let title_id = title_id
+        .and_then(canonical_positive_id)
+        .ok_or_else(|| "This trainer entry does not have a valid title ID.".to_string())?;
+    let game_id = game_id
+        .and_then(canonical_positive_id)
+        .ok_or_else(|| "This trainer entry does not have a valid game ID.".to_string())?;
+    Ok(format!("wemod://play?titleId={title_id}&gameId={game_id}"))
+}
+
+fn search_trainer_catalog_blocking(query: String) -> Result<Vec<TrainerCatalogResult>, String> {
+    let url = build_trainer_catalog_url(&query)?;
+    let client = reqwest::blocking::Client::builder()
+        .connect_timeout(Duration::from_secs(8))
+        .timeout(Duration::from_secs(15))
+        .redirect(reqwest::redirect::Policy::none())
+        .user_agent("Dusk/1.8.20")
+        .build()
+        .map_err(|_| "Trainer catalog is temporarily unavailable.".to_string())?;
+    let response = client
+        .get(url)
+        .send()
+        .map_err(|_| "Trainer catalog is temporarily unavailable.".to_string())?
+        .error_for_status()
+        .map_err(|_| "Trainer catalog is temporarily unavailable.".to_string())?;
+    if response
+        .content_length()
+        .is_some_and(|length| length > TRAINER_CATALOG_MAX_RESPONSE_BYTES as u64)
+    {
+        return Err("Trainer catalog response is too large to read safely.".into());
+    }
+    let mut bounded_response = response.take((TRAINER_CATALOG_MAX_RESPONSE_BYTES + 1) as u64);
+    let mut body = Vec::new();
+    bounded_response
+        .read_to_end(&mut body)
+        .map_err(|_| "Trainer catalog is temporarily unavailable.".to_string())?;
+    if body.len() > TRAINER_CATALOG_MAX_RESPONSE_BYTES {
+        return Err("Trainer catalog response is too large to read safely.".into());
+    }
+    let html = String::from_utf8(body)
+        .map_err(|_| "Trainer catalog data could not be read.".to_string())?;
+    parse_trainer_catalog_results(&html)
+}
+
+#[tauri::command]
+async fn search_trainer_catalog(query: String) -> Result<Vec<TrainerCatalogResult>, String> {
+    let query = query.trim().to_string();
+    build_trainer_catalog_url(&query)?;
+    tauri::async_runtime::spawn_blocking(move || search_trainer_catalog_blocking(query))
+        .await
+        .map_err(|_| "Trainer catalog search could not be completed.".to_string())?
+}
+
+#[cfg(target_os = "windows")]
+#[tauri::command]
+fn open_trainer(title_id: String, game_id: String) -> Result<(), String> {
+    let uri = build_trainer_play_uri(Some(&title_id), Some(&game_id))?;
+    hidden_windows_command("rundll32")
+        .args(["url.dll,FileProtocolHandler", &uri])
+        .spawn()
+        .map_err(|_| "Could not open the trainer app.".to_string())?;
+    Ok(())
+}
+
+#[cfg(not(target_os = "windows"))]
+#[tauri::command]
+fn open_trainer(_title_id: String, _game_id: String) -> Result<(), String> {
+    Err("Opening trainer apps is currently implemented for Windows.".into())
 }
 
 fn xml_unescape(text: &str) -> String {
@@ -6398,6 +6671,134 @@ fn data_directory(app: AppHandle) -> Result<String, String> {
     Ok(app_data_dir(&app)?.to_string_lossy().into_owned())
 }
 
+#[cfg(test)]
+mod trainer_catalog_tests {
+    use super::*;
+
+    fn result_row(
+        href: &str,
+        title: &str,
+        thumbnail: &str,
+        count: &str,
+        platform: &str,
+        updated: &str,
+        status: &str,
+    ) -> String {
+        format!(
+            r#"<a class="game-result" href="{href}" data-index="0">
+                <div class="col thumbnail"><img alt="" src="{thumbnail}"></div>
+                <div class="col name"><div>{title}</div></div>
+                <div class="col cheats">{count}</div>
+                <div class="col platforms"><div class="platforms-wrapper"><span class="platform"><img alt=""><span>{platform}</span></span></div></div>
+                <div class="col updated">{updated}</div>
+                <div class="col status"><div class="unavailable"><img alt=""><span>{status}</span></div></div>
+            </a>"#
+        )
+    }
+
+    #[test]
+    fn fixed_origin_search_query_is_encoded_and_bounded() {
+        let url = build_trainer_catalog_url("A/B: café").unwrap();
+        assert_eq!(
+            url.as_str(),
+            "https://www.wemod.com/cheats?q=A%2FB%3A+caf%C3%A9"
+        );
+        assert!(build_trainer_catalog_url("  ").is_err());
+        assert!(build_trainer_catalog_url(&"x".repeat(121)).is_err());
+    }
+
+    #[test]
+    fn parses_multiple_rows_and_preserves_optional_metadata() {
+        let html = format!(
+            r#"<div class="search-results"><div class="results-list">{}{}</div></div>"#,
+            result_row(
+                "/cheats/example-trainers",
+                "Example &amp; More",
+                "https://api-cdn.wemod.com/title_thumbnails/123/456/460/1/thumbnail.webp",
+                "42",
+                "Steam",
+                "Oct 12, 2026",
+                "Available",
+            ),
+            result_row(
+                "/cheats/other-trainers",
+                "Other&#039;s Game",
+                "https://api-cdn.wemod.com/title_thumbnails/7/8/460/1/thumbnail.webp",
+                "",
+                "Xbox",
+                "",
+                "Unsupported",
+            ),
+        );
+
+        let results = parse_trainer_catalog_results(&html).unwrap();
+        assert_eq!(results.len(), 2);
+        assert_eq!(results[0].title, "Example & More");
+        assert_eq!(results[0].title_id.as_deref(), Some("123"));
+        assert_eq!(results[0].game_id.as_deref(), Some("456"));
+        assert_eq!(results[0].platforms, vec!["Steam"]);
+        assert_eq!(results[0].cheat_count, Some(42));
+        assert_eq!(results[0].updated.as_deref(), Some("Oct 12, 2026"));
+        assert_eq!(results[0].status, "available");
+        assert_eq!(results[1].title, "Other's Game");
+        assert_eq!(results[1].cheat_count, None);
+        assert_eq!(results[1].updated, None);
+        assert_eq!(results[1].status, "unsupported");
+    }
+
+    #[test]
+    fn empty_catalog_and_unrecognized_markup_are_distinct() {
+        let empty = r#"<div class="search-results"><div class="no-results-message">No results found.</div></div>"#;
+        assert!(parse_trainer_catalog_results(empty).unwrap().is_empty());
+        assert!(parse_trainer_catalog_results("<html><body>Maintenance</body></html>").is_err());
+    }
+
+    #[test]
+    fn invalid_result_paths_and_unknown_status_fail_closed() {
+        let bad_path = result_row(
+            "https://example.invalid/cheats/game",
+            "Example",
+            "https://api-cdn.wemod.com/title_thumbnails/1/2/460/1/thumbnail.webp",
+            "1",
+            "Steam",
+            "Today",
+            "Available",
+        );
+        assert!(parse_trainer_catalog_results(&format!(
+            r#"<div class="search-results">{bad_path}</div>"#
+        ))
+        .is_err());
+
+        let unknown = result_row(
+            "/cheats/game-trainers",
+            "Example",
+            "https://api-cdn.wemod.com/title_thumbnails/1/2/460/1/thumbnail.webp",
+            "",
+            "Steam",
+            "",
+            "Checking",
+        );
+        let results = parse_trainer_catalog_results(&format!(
+            r#"<div class="search-results">{unknown}</div>"#
+        ))
+        .unwrap();
+        assert_eq!(results[0].status, "unknown");
+    }
+
+    #[test]
+    fn trainer_play_uri_requires_positive_decimal_ids() {
+        assert_eq!(
+            build_trainer_play_uri(Some("123"), Some("456")).unwrap(),
+            "wemod://play?titleId=123&gameId=456"
+        );
+        for bad_id in ["", "0", "+4", "-1", "4.0", "18446744073709551616"] {
+            assert!(build_trainer_play_uri(Some(bad_id), Some("456")).is_err());
+        }
+        assert!(build_trainer_play_uri(Some("123"), None).is_err());
+        assert!(build_trainer_play_uri(None, Some("456")).is_err());
+    }
+}
+
 pub fn run() {
     tauri::Builder::default()
         .setup(|app| {
@@ -6440,6 +6841,8 @@ pub fn run() {
             download_manager::cancel_managed_download,
             run_game_installer,
             open_external_target,
+            search_trainer_catalog,
+            open_trainer,
             search_online_fix_games,
             game_sources::search_game_source,
             game_sources::open_game_source_listing,

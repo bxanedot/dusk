@@ -14,6 +14,18 @@ export interface GameRecord {
   launchCount: number;
 }
 
+export type TrainerCatalogStatus = "available" | "unsupported" | "unavailable" | "unknown";
+
+export interface TrainerCatalogResult {
+  title: string;
+  titleId: string | null;
+  gameId: string | null;
+  platforms: string[];
+  cheatCount: number | null;
+  updated: string | null;
+  status: TrainerCatalogStatus;
+}
+
 export interface ScanResult {
   found: number;
   added: number;

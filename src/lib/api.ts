@@ -15,6 +15,7 @@ import type {
   SaveBackupRecord,
   SaveConfig,
   Stats,
+  TrainerCatalogResult,
 } from "../types";
 
 export type OnlineFixHosterFile = {
@@ -65,6 +66,10 @@ export const api = {
   deleteProfile: (profileId: string) =>
     invoke<ProfileRecord>("delete_profile", { profileId }),
   listGames: () => invoke<GameRecord[]>("list_games"),
+  searchTrainerCatalog: (query: string) =>
+    invoke<TrainerCatalogResult[]>("search_trainer_catalog", { query }),
+  openTrainer: (titleId: string, gameId: string) =>
+    invoke<void>("open_trainer", { titleId, gameId }),
   scanGames: () => invoke<ScanResult>("scan_games"),
   refreshMissingCovers: () =>
     invoke<{ attempted: number; updated: number; remaining: number }>("refresh_missing_covers"),

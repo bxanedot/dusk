@@ -52,6 +52,7 @@ import { getVersion } from "@tauri-apps/api/app";
 import duskLogo from "./assets/dusk-logo.svg";
 import AccountProfileSettings from "./AccountProfileSettings";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { TrainerCatalogPanel, canOpenTrainer, trainerResultKey, type TrainerCatalogPanelState } from "./components/TrainerCatalogPanel";
 import { api, type ManagedDownload, type OnlineFixHosterFile } from "./lib/api";
 import { syncAccountState } from "./lib/accountSync";
 import { currentDuskAccount, logoutDuskAccount, type DuskAccount } from "./lib/auth";
@@ -70,6 +71,7 @@ import type {
   SaveBackupRecord,
   SaveConfig,
   Stats,
+  TrainerCatalogResult,
 } from "./types";
 
 type View =
@@ -414,6 +416,11 @@ function GameDetail(props: {
   const [saveBackups, setSaveBackups] = useState<SaveBackupRecord[]>([]);
   const [profileSaveState, setProfileSaveState] = useState<ProfileSaveFileState | null>(null);
   const [saveLoading, setSaveLoading] = useState(true);
+  const [trainerCatalogState, setTrainerCatalogState] = useState<TrainerCatalogPanelState>("idle");
+  const [trainerCatalogResults, setTrainerCatalogResults] = useState<TrainerCatalogResult[]>([]);
+  const [trainerCatalogError, setTrainerCatalogError] = useState<string | null>(null);
+  const [openingTrainerKey, setOpeningTrainerKey] = useState<string | null>(null);
+  const trainerCatalogRequest = useRef(0);
 
   const membershipSet = useMemo(() => {
     return new Set(
@@ -444,6 +451,49 @@ function GameDetail(props: {
   useEffect(() => {
     void refreshSaveData();
   }, [props.game.id]);
+
+  useEffect(() => {
+    trainerCatalogRequest.current += 1;
+    setTrainerCatalogState("idle");
+    setTrainerCatalogResults([]);
+    setTrainerCatalogError(null);
+    setOpeningTrainerKey(null);
+    return () => {
+      trainerCatalogRequest.current += 1;
+    };
+  }, [props.game.id]);
+
+  async function searchTrainerCatalog() {
+    const requestId = ++trainerCatalogRequest.current;
+    setTrainerCatalogState("loading");
+    setTrainerCatalogResults([]);
+    setTrainerCatalogError(null);
+    try {
+      const results = await api.searchTrainerCatalog(props.game.title);
+      if (trainerCatalogRequest.current !== requestId) return;
+      setTrainerCatalogResults(results);
+      setTrainerCatalogState(results.length === 0 ? "empty" : "results");
+    } catch (error) {
+      if (trainerCatalogRequest.current !== requestId) return;
+      setTrainerCatalogError(readableError(error) || "Could not load trainer results. Try again.");
+      setTrainerCatalogState("error");
+    }
+  }
+
+  async function openTrainerResult(result: TrainerCatalogResult) {
+    if (!canOpenTrainer(result)) return;
+    const key = trainerResultKey(result);
+    if (!key || !result.titleId || !result.gameId) return;
+    setOpeningTrainerKey(key);
+    try {
+      await api.openTrainer(result.titleId, result.gameId);
+      props.onToast("Opening trainer app.");
+    } catch (error) {
+      props.onToast(readableError(error), "error");
+    } finally {
+      setOpeningTrainerKey((current) => current === key ? null : current);
+    }
+  }
 
   async function withDetailLock<T>(action: () => Promise<T>): Promise<T | undefined> {
     if (detailBusyRef.current) return undefined;
@@ -724,6 +774,16 @@ function GameDetail(props: {
               Shots
             </button>
           </div>
+
+          <TrainerCatalogPanel
+            gameTitle={props.game.title}
+            state={trainerCatalogState}
+            results={trainerCatalogResults}
+            openingKey={openingTrainerKey}
+            errorMessage={trainerCatalogError}
+            onSearch={() => void searchTrainerCatalog()}
+            onOpen={(result) => void openTrainerResult(result)}
+          />
 
           <section className="detail-section">
             <h3>Collections</h3>

@@ -2,6 +2,14 @@
 
 All notable Dusk changes are documented here.
 
+## 1.8.20 - 2026-10-14
+
+Add a polished trainer catalog to Dusk game details.
+
+- Show trainer availability, platforms, cheat counts and update dates inside Dusk.
+- Open available trainers from their catalog entries; trainer controls remain in the trainer app.
+- Keep Dusk's existing Play, saves, collections, profiles and game-management features in place.
+
 ## 1.8.19 - 2026-10-10
 
 Keep the native window responsive during account-scope migration and cloud-state synchronization.
