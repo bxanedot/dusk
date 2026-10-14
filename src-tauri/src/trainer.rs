@@ -630,9 +630,11 @@ fn search_online_cheat_tables_blocking(
     let client = github_api_client()?;
     let mut search_url = github_api_url(&["search", "repositories"])?;
     let search_title = query_words.join(" ");
+    let search_terms =
+        "\"cheat engine\" OR \"ct files\" OR \"cheat tables\" OR \".ct file\" OR \"cheat table\"";
     search_url
         .query_pairs_mut()
-        .append_pair("q", &format!("{search_title} cheat"))
+        .append_pair("q", &format!("{search_title} {search_terms}"))
         .append_pair("sort", "stars")
         .append_pair("order", "desc")
         .append_pair("per_page", &MAX_GITHUB_SEARCH_RESULTS.to_string());
