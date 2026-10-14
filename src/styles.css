@@ -960,6 +960,10 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
 .trainer-entry-copy { display: grid; min-width: 0; gap: 4px; }
 .trainer-entry-copy strong { overflow: hidden; color: var(--text); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
 .trainer-entry-copy span { overflow: hidden; color: var(--subtle); font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+.trainer-entry-value { display: grid; min-width: 96px; flex: 0 0 112px; gap: 3px; color: var(--subtle); font-size: 8px; }
+.trainer-entry-value input { width: 100%; min-width: 0; min-height: 29px; padding: 0 8px; border: 1px solid var(--border-strong); border-radius: 7px; outline: 0; color: var(--text); background: rgba(0, 0, 0, 0.16); font: inherit; font-size: 9px; }
+.trainer-entry-value input:focus { border-color: rgba(var(--accent-rgb), 0.65); box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.1); }
+.trainer-entry-value input::placeholder { color: var(--subtle); }
 .trainer-entry-actions { display: flex; flex: 0 0 auto; gap: 5px; }
 .trainer-entry-button { min-height: 29px; gap: 4px; padding: 0 8px; font-size: 9px; }
 

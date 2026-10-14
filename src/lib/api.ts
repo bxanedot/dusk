@@ -80,10 +80,10 @@ export const api = {
       fileName: result.fileName,
       sizeBytes: result.sizeBytes,
     }),
-  applyCheatValue: (gameId: string, entryId: string) =>
-    invoke<void>("apply_cheat_value", { gameId, entryId }),
-  setCheatHold: (gameId: string, entryId: string, enabled: boolean) =>
-    invoke<void>("set_cheat_hold", { gameId, entryId, enabled }),
+  applyCheatValue: (gameId: string, entryId: string, value: string) =>
+    invoke<void>("apply_cheat_value", { gameId, entryId, value }),
+  setCheatHold: (gameId: string, entryId: string, enabled: boolean, value?: string) =>
+    invoke<void>("set_cheat_hold", { gameId, entryId, enabled, value }),
   scanGames: () => invoke<ScanResult>("scan_games"),
   refreshMissingCovers: () =>
     invoke<{ attempted: number; updated: number; remaining: number }>("refresh_missing_covers"),

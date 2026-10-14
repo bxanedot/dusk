@@ -1,4 +1,8 @@
-use quick_xml::{escape::unescape, events::Event, Reader};
+use quick_xml::{
+    escape::unescape,
+    events::{BytesStart, Event},
+    Reader, XmlVersion,
+};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::{
@@ -94,6 +98,7 @@ struct EntryBuilder {
     address: String,
     variable_type: String,
     value: String,
+    last_state_value: Option<String>,
     show_as_hex: bool,
     current_field: Option<String>,
     has_child_entries: bool,
@@ -156,6 +161,9 @@ fn set_field(entry: &mut EntryBuilder, name: &str, value: &str) {
 
 fn supported_value_bytes(entry: &CheatEntry) -> Result<Vec<u8>, String> {
     let value = entry.value.trim();
+    if value.len() > 64 {
+        return Err("Enter a value with no more than 64 characters.".into());
+    }
     let kind = entry.variable_type.trim().to_ascii_lowercase();
     match kind.as_str() {
         "float" => {
@@ -205,6 +213,48 @@ fn supported_value_bytes(entry: &CheatEntry) -> Result<Vec<u8>, String> {
     }
 }
 
+fn supported_numeric_type(variable_type: &str) -> bool {
+    matches!(
+        variable_type.trim().to_ascii_lowercase().as_str(),
+        "float" | "double" | "byte" | "1 byte" | "2 bytes" | "4 bytes" | "8 bytes"
+    )
+}
+
+fn split_module_offset(address: &str) -> Option<(&str, &str)> {
+    let address = address.trim();
+    if let Some(quoted) = address.strip_prefix('"') {
+        let (module, offset) = quoted.split_once("\"+")?;
+        Some((module, offset))
+    } else {
+        address.split_once('+')
+    }
+}
+
+fn supported_module_name(module: &str) -> bool {
+    let Some((base, extension)) = module.rsplit_once('.') else {
+        return false;
+    };
+    !base.trim().is_empty()
+        && matches!(
+            extension.to_ascii_lowercase().as_str(),
+            "exe" | "dll" | "asi" | "ocx" | "sys" | "mod"
+        )
+}
+
+fn last_state_value(tag: &BytesStart<'_>) -> Result<Option<String>, String> {
+    for attribute in tag.attributes() {
+        let attribute =
+            attribute.map_err(|error| format!("Could not parse a table attribute: {error}"))?;
+        if attribute.key.local_name().as_ref() == "Value" {
+            return attribute
+                .normalized_value(XmlVersion::Implicit1_0)
+                .map(|value| Some(value.into_owned()))
+                .map_err(|error| format!("Could not read a saved table value: {error}"));
+        }
+    }
+    Ok(None)
+}
+
 fn valid_address_syntax(address: &str) -> bool {
     let address = address.trim();
     if address.is_empty()
@@ -214,15 +264,17 @@ fn valid_address_syntax(address: &str) -> bool {
     {
         return false;
     }
-    if let Some((module, offset)) = address.split_once('+') {
+    if let Some((module, offset)) = split_module_offset(address) {
+        let module = module.trim();
         !module.trim().is_empty()
+            && supported_module_name(module)
             && module.chars().all(|character| {
-                character.is_ascii_alphanumeric() || matches!(character, '_' | '-' | '.')
+                character.is_ascii_alphanumeric() || matches!(character, '_' | '-' | '.' | ' ')
             })
             && parse_hex(offset).is_some()
             && !offset.contains('+')
     } else {
-        parse_hex(address).is_some()
+        parse_hex(address).is_some_and(|address| address != 0)
     }
 }
 
@@ -254,12 +306,22 @@ fn finish_entry(builder: EntryBuilder, output: &mut Vec<CheatEntry>, skipped: &m
         title,
         address: builder.address.trim().to_string(),
         variable_type: builder.variable_type.trim().to_string(),
-        value: builder.value.trim().to_string(),
+        value: if builder.value.trim().is_empty() {
+            builder
+                .last_state_value
+                .as_deref()
+                .unwrap_or_default()
+                .trim()
+                .to_string()
+        } else {
+            builder.value.trim().to_string()
+        },
         show_as_hex: builder.show_as_hex,
     };
     if builder.unsupported
         || !valid_address_syntax(&entry.address)
-        || supported_value_bytes(&entry).is_err()
+        || !supported_numeric_type(&entry.variable_type)
+        || (!entry.value.is_empty() && supported_value_bytes(&entry).is_err())
     {
         *skipped += 1;
         return;
@@ -299,6 +361,9 @@ fn parse_table(contents: &str) -> Result<(Vec<CheatEntry>, usize), String> {
                     });
                 } else if let Some(entry) = entries.last_mut() {
                     if element_path.last().map(String::as_str) == Some("CheatEntry") {
+                        if name == "LastState" {
+                            entry.last_state_value = last_state_value(&tag)?;
+                        }
                         if matches!(
                             name.as_str(),
                             "Description" | "Address" | "VariableType" | "Value" | "ShowAsHex"
@@ -324,6 +389,11 @@ fn parse_table(contents: &str) -> Result<(Vec<CheatEntry>, usize), String> {
             Event::Empty(tag) => {
                 let name = tag.local_name().as_ref().to_string();
                 if let Some(entry) = entries.last_mut() {
+                    if name == "LastState"
+                        && element_path.last().map(String::as_str) == Some("CheatEntry")
+                    {
+                        entry.last_state_value = last_state_value(&tag)?;
+                    }
                     if matches!(
                         name.as_str(),
                         "AssemblerScript"
@@ -382,7 +452,7 @@ fn parse_table(contents: &str) -> Result<(Vec<CheatEntry>, usize), String> {
         return Err("The table XML ended inside a cheat entry.".into());
     }
     if parsed_entries.is_empty() {
-        return Err("No supported numeric entries were found. Script, pointer, and custom-type entries are not loaded.".into());
+        return Err("No directly writable numeric entries were found. Dusk supports numeric entries with absolute or module-relative addresses; scripts, pointers, symbols, relative offsets, and custom types are not loaded.".into());
     }
     Ok((parsed_entries, skipped))
 }
@@ -873,8 +943,16 @@ fn selected_entry(
 }
 
 #[tauri::command]
-pub fn apply_cheat_value(app: AppHandle, game_id: String, entry_id: String) -> Result<(), String> {
-    let (executable, entry) = selected_entry(&app, &game_id, &entry_id)?;
+pub fn apply_cheat_value(
+    app: AppHandle,
+    game_id: String,
+    entry_id: String,
+    value: Option<String>,
+) -> Result<(), String> {
+    let (executable, mut entry) = selected_entry(&app, &game_id, &entry_id)?;
+    if let Some(value) = value {
+        entry.value = value;
+    }
     let bytes = supported_value_bytes(&entry)?;
     write_game_value(&executable, &entry.address, &bytes)
 }
@@ -885,6 +963,7 @@ pub fn set_cheat_hold(
     game_id: String,
     entry_id: String,
     enabled: bool,
+    value: Option<String>,
 ) -> Result<(), String> {
     let key = format!("{}:{}", game_key(&game_id), entry_id);
     if !enabled {
@@ -905,7 +984,10 @@ pub fn set_cheat_hold(
         return Ok(());
     }
 
-    let (executable, entry) = selected_entry(&app, &game_id, &entry_id)?;
+    let (executable, mut entry) = selected_entry(&app, &game_id, &entry_id)?;
+    if let Some(value) = value {
+        entry.value = value;
+    }
     let bytes = supported_value_bytes(&entry)?;
     let (process_id, address, expected_path) = prepare_game_value(&executable, &entry.address)?;
     write_game_value_for_process(process_id, &expected_path, address, &bytes)?;
@@ -1128,7 +1210,8 @@ fn resolve_address(process_id: u32, address: &str) -> Result<usize, String> {
         },
     };
     let address = address.trim();
-    if let Some((module_name, offset_text)) = address.split_once('+') {
+    if let Some((module_name, offset_text)) = split_module_offset(address) {
+        let module_name = module_name.trim();
         let offset = parse_hex(offset_text)
             .ok_or_else(|| "This table has an invalid module offset.".to_string())?;
         let snapshot = unsafe {

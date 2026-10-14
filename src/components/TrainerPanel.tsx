@@ -18,6 +18,7 @@ export function TrainerPanel(props: TrainerPanelProps) {
   const [loading, setLoading] = useState(true);
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [heldEntries, setHeldEntries] = useState<Set<string>>(() => new Set());
+  const [entryValues, setEntryValues] = useState<Record<string, string>>({});
   const [entryPage, setEntryPage] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const [onlineQuery, setOnlineQuery] = useState(props.gameTitle);
@@ -32,6 +33,7 @@ export function TrainerPanel(props: TrainerPanelProps) {
     setError(null);
     setTable(null);
     setHeldEntries(new Set());
+    setEntryValues({});
     setEntryPage(1);
     void api.getCheatTable(props.gameId)
       .then((result) => { if (current) setTable(result); })
@@ -107,6 +109,7 @@ export function TrainerPanel(props: TrainerPanelProps) {
       setTable(imported);
       setEntryPage(1);
       setHeldEntries(new Set());
+      setEntryValues({});
       const skipped = imported.skippedEntries > 0
         ? ` ${imported.skippedEntries} unsupported entr${imported.skippedEntries === 1 ? "y was" : "ies were"} skipped.`
         : "";
@@ -133,6 +136,7 @@ export function TrainerPanel(props: TrainerPanelProps) {
       setTable(imported);
       setEntryPage(1);
       setHeldEntries(new Set());
+      setEntryValues({});
       setError(null);
       const skipped = imported.skippedEntries > 0
         ? ` ${imported.skippedEntries} unsupported entr${imported.skippedEntries === 1 ? "y was" : "ies were"} skipped.`
@@ -147,10 +151,10 @@ export function TrainerPanel(props: TrainerPanelProps) {
     }
   }
 
-  async function applyValue(entryId: string, title: string) {
+  async function applyValue(entryId: string, title: string, value: string) {
     setBusyAction(entryId);
     try {
-      await api.applyCheatValue(props.gameId, entryId);
+      await api.applyCheatValue(props.gameId, entryId, value);
       props.onToast(`Applied “${title}”.`);
     } catch (reason) {
       props.onToast(typeof reason === "string" ? reason : "Could not apply this value.", "error");
@@ -159,11 +163,11 @@ export function TrainerPanel(props: TrainerPanelProps) {
     }
   }
 
-  async function toggleHold(entryId: string) {
+  async function toggleHold(entryId: string, value: string) {
     const enabling = !heldEntries.has(entryId);
     setBusyAction(entryId);
     try {
-      await api.setCheatHold(props.gameId, entryId, enabling);
+      await api.setCheatHold(props.gameId, entryId, enabling, value);
       setHeldEntries((current) => {
         const next = new Set(current);
         if (enabling) next.add(entryId);
@@ -200,7 +204,7 @@ export function TrainerPanel(props: TrainerPanelProps) {
       </div>
 
       <p className="trainer-panel-note">
-        For offline, single-player use. Dusk loads numeric values only; scripts, pointer paths, and custom types are skipped.
+        For offline, single-player use. Set a value for each numeric entry before applying or holding it. Scripts, pointer paths, and custom types are skipped.
       </p>
       <form className="trainer-online-search" onSubmit={(event) => void searchOnlineTables(event)}>
         <label className="trainer-online-query">
@@ -259,18 +263,32 @@ export function TrainerPanel(props: TrainerPanelProps) {
             {visibleEntries.map((entry) => {
               const busy = busyAction === entry.id;
               const held = heldEntries.has(entry.id);
+              const value = entryValues[entry.id] ?? entry.value;
               return (
                 <article className="trainer-entry" key={entry.id}>
                   <div className="trainer-entry-copy">
                     <strong title={entry.title}>{entry.title}</strong>
-                    <span>{entry.variableType} · {entry.address} · value {entry.value}</span>
+                    <span>{entry.variableType} · {entry.address}</span>
                   </div>
+                  <label className="trainer-entry-value">
+                    <span>Value</span>
+                    <input
+                      type="text"
+                      inputMode={entry.showAsHex ? "text" : "decimal"}
+                      value={value}
+                      maxLength={64}
+                      placeholder={entry.showAsHex ? "Hex value" : "Enter value"}
+                      aria-label={`Value for ${entry.title}`}
+                      disabled={busyAction !== null}
+                      onChange={(event) => setEntryValues((current) => ({ ...current, [entry.id]: event.target.value }))}
+                    />
+                  </label>
                   <div className="trainer-entry-actions">
                     <button
                       type="button"
                       className="button secondary trainer-entry-button"
-                      onClick={() => void applyValue(entry.id, entry.title)}
-                      disabled={busy || busyAction !== null || !props.hasExecutable}
+                      onClick={() => void applyValue(entry.id, entry.title, value)}
+                      disabled={busy || busyAction !== null || !props.hasExecutable || !value.trim()}
                       title={!props.hasExecutable ? "Add this game's executable in Dusk first." : "Write this value once."}
                     >
                       {busy ? <LoaderCircle size={13} className="spin" /> : <Zap size={13} />}
@@ -279,8 +297,8 @@ export function TrainerPanel(props: TrainerPanelProps) {
                     <button
                       type="button"
                       className={`button ${held ? "primary" : "secondary"} trainer-entry-button`}
-                      onClick={() => void toggleHold(entry.id)}
-                      disabled={busy || busyAction !== null || !props.hasExecutable}
+                      onClick={() => void toggleHold(entry.id, value)}
+                      disabled={busy || busyAction !== null || !props.hasExecutable || !value.trim()}
                       aria-pressed={held}
                       title={!props.hasExecutable ? "Add this game's executable in Dusk first." : "Keep writing this value while the game is running."}
                     >
