@@ -2639,7 +2639,6 @@ export default function App() {
                 }}
                 aria-label={webSearchEnabled ? "Search the web for games" : "Search your local games"}
                 placeholder={webSearchEnabled ? `Search ${WEB_SOURCES[webSource].label} (Enter)` : "Search your games"}
-                aria-label={webSearchEnabled ? "Web search query" : "Search your games"}
               />
               {query && (
                 <button type="button" onClick={() => setQuery("")} aria-label="Clear search">
