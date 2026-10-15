@@ -2337,6 +2337,8 @@ export default function App() {
   async function searchWeb() {
     const term = query.trim();
     if (!term || webLoading) return;
+    setSelectedGameId(null);
+    requestAnimationFrame(() => document.querySelector(".content")?.scrollTo({ top: 0, behavior: "instant" }));
     setWebLoading(true);
     setWebSearched(true);
     setWebError("");
@@ -2638,7 +2640,12 @@ export default function App() {
                   }
                 }}
                 onFocus={() => {
-                  if (!webSearchEnabled && view === "home") setView("library");
+                  if (webSearchEnabled) return;
+                  setSelectedGameId(null);
+                  if (view !== "library" && view !== "favorites") {
+                    setView("library");
+                    setCollectionFilter("all");
+                  }
                 }}
                 aria-label={webSearchEnabled ? "Search the web for games" : "Search your local games"}
                 placeholder={webSearchEnabled ? `Search ${WEB_SOURCES[webSource].label} (Enter)` : "Search your games"}
@@ -2658,7 +2665,13 @@ export default function App() {
               <input
                 type="checkbox"
                 checked={webSearchEnabled}
-                onChange={(event) => { setWebSearchEnabled(event.target.checked); setWebSearched(false); setWebResults([]); setWebError(""); }}
+                onChange={(event) => {
+                  setSelectedGameId(null);
+                  setWebSearchEnabled(event.target.checked);
+                  setWebSearched(false);
+                  setWebResults([]);
+                  setWebError("");
+                }}
               />
               <span className="web-search-switch" aria-hidden="true" />
               <span>Web search</span>
