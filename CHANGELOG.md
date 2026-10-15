@@ -21,6 +21,13 @@ Expand the Dusk Catalog and add local game-table controls.
 ### Search and settings
 - Allow web search without requiring a VPN connection and remove VPN controls from Settings.
 
+### Launcher refresh (2026-10-15)
+- Apply a shared launcher layout across Home, Library, Favorites, Dusk Catalog, Screenshots, Achievements, and Settings.
+- Add a separate rail for installed local games and keep library management and launching at the center of Dusk.
+- Show game details in the main workspace with clear Details, Play, and Favorite actions.
+- Preserve Dusk's branding, existing features, themes, and local playtime, save, and screenshot data.
+- Restore keyboard and controller focus when returning from game details.
+
 ## 1.8.21 - 2026-10-14
 
 Add an alphabetical Dusk Catalog browser and refresh the launcher layout.
