@@ -701,7 +701,8 @@ function GameDetail(props: {
 
   return (
     <div className="game-workspace">
-      <section className="detail-panel" aria-label={props.game.title + " game workspace"}>
+      <section className="detail-panel" aria-label={props.game.title + " game workspace"}
+        data-controller-game-id={props.game.id}>
         <button className="button secondary workspace-back" autoFocus onClick={props.onClose}>Back to overview</button>
         <div className="detail-art">
           <Cover game={props.game} />
@@ -1045,6 +1046,7 @@ export default function App() {
   });
 
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
+  const selectedGameReturnFocusRef = useRef<HTMLElement | null>(null);
   const [collectionFilter, setCollectionFilter] = useState("all");
   const [query, setQuery] = useState("");
   const [webSearchEnabled, setWebSearchEnabled] = useState(false);
@@ -1143,7 +1145,7 @@ export default function App() {
     const exactTitleMatch = matchingGames.find((game) => normalizeCatalogText(game.title) === normalizeCatalogText(result.title));
     const game = exactTitleMatch ?? (matchingGames.length === 1 ? matchingGames[0] : null);
     if (game) {
-      setSelectedGameId(game.id);
+      openGame(game.id);
       return;
     }
     if (matchingGames.length > 1) {
@@ -1590,7 +1592,7 @@ export default function App() {
       return;
     }
     if (selectedGameId) {
-      setSelectedGameId(null);
+      closeSelectedGame();
       return;
     }
     if (view !== "home") {
@@ -1633,9 +1635,32 @@ export default function App() {
 
   const selectedGame = games.find((game) => game.id === selectedGameId) || null;
   const openGame = useCallback((gameId: string) => {
+    selectedGameReturnFocusRef.current = document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null;
     setSelectedGameId(gameId);
     requestAnimationFrame(() => document.querySelector(".content")?.scrollTo({ top: 0, behavior: "instant" }));
   }, []);
+  const closeSelectedGame = useCallback(() => {
+    setSelectedGameId(null);
+    requestAnimationFrame(() => {
+      const opener = selectedGameReturnFocusRef.current;
+      selectedGameReturnFocusRef.current = null;
+      if (opener?.isConnected && opener.getClientRects().length > 0) {
+        opener.focus({ preventScroll: true });
+        return;
+      }
+
+      const fallback = Array.from(document.querySelectorAll<HTMLElement>(
+        ".game-rail-item, .game-rail-library, .nav-item",
+      )).find((element) => element.isConnected && element.getClientRects().length > 0 && !element.matches(":disabled"));
+      fallback?.focus({ preventScroll: true });
+    });
+  }, []);
+
+  useEffect(() => {
+    if (selectedGameId && !selectedGame && !loading) closeSelectedGame();
+  }, [selectedGameId, selectedGame, loading, closeSelectedGame]);
 
   const membershipLookup = useMemo(() => {
     const map = new Map<string, Set<string>>();
@@ -2728,7 +2753,7 @@ export default function App() {
           activeProfile={activeProfile}
           collections={collections}
           memberships={memberships}
-          onClose={() => setSelectedGameId(null)}
+          onClose={closeSelectedGame}
           onPlay={play}
           onRefresh={() => refreshCore(false)}
           onToast={showToast}
@@ -2942,7 +2967,7 @@ export default function App() {
                                 <Play size={16} />
                                 {playingId === recentGames[0].id ? "Launching…" : "Play"}
                               </button>
-                              <button className="button secondary" onClick={() => setSelectedGameId(recentGames[0].id)}>
+                              <button className="button secondary" onClick={() => openGame(recentGames[0].id)}>
                                 Game details
                               </button>
                             </>
