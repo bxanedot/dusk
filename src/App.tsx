@@ -275,7 +275,8 @@ function GameCard(props: {
             aria-label={"Play " + props.game.title}
             disabled={props.playing}
           >
-            {props.playing ? <RefreshCw className="spin" size={18} /> : <Play size={18} />}
+            {props.playing ? <RefreshCw className="spin" size={16} /> : <Play size={16} fill="currentColor" />}
+            <span>{props.playing ? "Launching…" : "Play"}</span>
           </button>
           <button
             className={cx("round-action", props.game.favorite && "selected")}
@@ -1011,6 +1012,7 @@ export default function App() {
     setSelectedGameId(null);
     setWebSearched(false);
     setViewState(next);
+    requestAnimationFrame(() => document.querySelector(".content")?.scrollTo({ top: 0, behavior: "instant" }));
   }, []);
   const [trainerCatalogState, setTrainerCatalogState] = useState<TrainerCatalogBrowserState>("idle");
   const [trainerCatalogEntries, setTrainerCatalogEntries] = useState<TrainerCatalogResult[]>([]);
@@ -1630,6 +1632,10 @@ export default function App() {
 
 
   const selectedGame = games.find((game) => game.id === selectedGameId) || null;
+  const openGame = useCallback((gameId: string) => {
+    setSelectedGameId(gameId);
+    requestAnimationFrame(() => document.querySelector(".content")?.scrollTo({ top: 0, behavior: "instant" }));
+  }, []);
 
   const membershipLookup = useMemo(() => {
     const map = new Map<string, Set<string>>();
@@ -2615,7 +2621,7 @@ export default function App() {
 
       <GameRail games={games} selectedGameId={selectedGameId} collapsed={railCollapsed}
         onToggleCollapsed={() => setRailCollapsed(value => !value)}
-        onSelectGame={setSelectedGameId}
+        onSelectGame={openGame}
         onOpenLibrary={() => { setView("library"); setCollectionFilter("all"); }} />
       <main className="main">
         <header className="topbar">
@@ -2999,7 +3005,7 @@ export default function App() {
                             key={game.id}
                             game={game}
                             playing={playingId === game.id}
-                            onOpen={() => setSelectedGameId(game.id)}
+                            onOpen={() => openGame(game.id)}
                             onPlay={() => void play(game)}
                             onFavorite={() => void toggleFavorite(game)}
                           />
@@ -3022,7 +3028,7 @@ export default function App() {
                             key={game.id}
                             game={game}
                             playing={playingId === game.id}
-                            onOpen={() => setSelectedGameId(game.id)}
+                            onOpen={() => openGame(game.id)}
                             onPlay={() => void play(game)}
                             onFavorite={() => void toggleFavorite(game)}
                           />
@@ -3168,7 +3174,7 @@ export default function App() {
                           key={game.id}
                           game={game}
                           playing={playingId === game.id}
-                          onOpen={() => setSelectedGameId(game.id)}
+                          onOpen={() => openGame(game.id)}
                           onPlay={() => void play(game)}
                           onFavorite={() => void toggleFavorite(game)}
                         />
