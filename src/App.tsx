@@ -49,6 +49,7 @@ import {
 } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { getVersion } from "@tauri-apps/api/app";
+import { SettingsNavigation } from "./components/SettingsNavigation";
 import { GameRail } from "./components/GameRail";
 import duskLogo from "./assets/dusk-logo.svg";
 import AccountProfileSettings from "./AccountProfileSettings";
@@ -138,10 +139,6 @@ const EMPTY_STATS: Stats = {
 
 function cx(...values: Array<string | false | null | undefined>) {
   return values.filter(Boolean).join(" ");
-}
-
-function scrollToSettingsSection(sectionId: string) {
-  document.getElementById(sectionId)?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function readableError(error: unknown) {
@@ -3308,41 +3305,16 @@ export default function App() {
                   </div>
 
                   <div className="settings-layout">
-                    <nav className="settings-nav" aria-label="Settings sections">
-                      <span className="settings-nav-heading">Preferences</span>
-                      {!guestMode && (
-                        <button type="button" className="settings-nav-item" onClick={() => scrollToSettingsSection("settings-account")}>
-                          <UserRound size={15} /> Account
-                        </button>
-                      )}
-                      <button type="button" className="settings-nav-item" onClick={() => scrollToSettingsSection("settings-profiles")}>
-                        <Layers3 size={15} /> Profiles &amp; saves
-                      </button>
-                      <button type="button" className="settings-nav-item" onClick={() => scrollToSettingsSection("settings-appearance")}>
-                        <Moon size={15} /> Appearance
-                      </button>
-                      <button type="button" className="settings-nav-item" onClick={() => scrollToSettingsSection("settings-detection")}>
-                        <ScanSearch size={15} /> Game detection
-                      </button>
-                      <button type="button" className="settings-nav-item" onClick={() => scrollToSettingsSection("settings-installers")}>
-                        <PackageOpen size={15} /> Installers
-                      </button>
-                      <button type="button" className="settings-nav-item" onClick={() => scrollToSettingsSection("settings-updates")}>
-                        <RefreshCw size={15} /> Updates
-                      </button>
-                      <button type="button" className="settings-nav-item" onClick={() => scrollToSettingsSection("settings-data")}>
-                        <Database size={15} /> Local data
-                      </button>
-                    </nav>
+                    <SettingsNavigation guestMode={guestMode} />
 
                     <div className="settings-content">
                   {!guestMode && (
-                    <div id="settings-account" className="settings-section-anchor">
+                    <div id="settings-account" tabIndex={-1} className="settings-section-anchor">
                       <AccountProfileSettings onToast={showToast} />
                     </div>
                   )}
 
-                  <section id="settings-profiles" className="settings-card">
+                  <section id="settings-profiles" tabIndex={-1} className="settings-card">
                     <div className="settings-card-head">
                       <UserRound size={20} />
                       <div>
@@ -3434,7 +3406,7 @@ export default function App() {
                     </div>
                   </section>
 
-                  <section id="settings-console" className="settings-card">
+                  <section id="settings-console" tabIndex={-1} className="settings-card">
                     <div className="settings-card-head">
                       <Gamepad2 size={20} />
                       <div>
@@ -3461,7 +3433,7 @@ export default function App() {
                     </div>
                   </section>
 
-                  <section id="settings-appearance" className="settings-card">
+                  <section id="settings-appearance" tabIndex={-1} className="settings-card">
                     <div className="settings-card-head">
                       <Moon size={20} />
                       <div>
@@ -3508,7 +3480,7 @@ export default function App() {
                     </div>
                   </section>
 
-                  <section id="settings-presence" className="settings-card">
+                  <section id="settings-presence" tabIndex={-1} className="settings-card">
                     <div className="settings-card-head">
                       <Radio size={20} />
                       <div>
@@ -3555,7 +3527,7 @@ export default function App() {
                     </div>
                   </section>
 
-                  <section id="settings-updates" className="settings-card">
+                  <section id="settings-updates" tabIndex={-1} className="settings-card">
                     <div className="settings-card-head">
                       <RefreshCw size={20} />
                       <div>
@@ -3600,7 +3572,7 @@ export default function App() {
                     )}
                   </section>
 
-                  <section id="settings-data" className="settings-card">
+                  <section id="settings-data" tabIndex={-1} className="settings-card">
                     <div className="settings-card-head">
                       <Database size={20} />
                       <div>
@@ -3622,7 +3594,7 @@ export default function App() {
                     </div>
                   </section>
 
-                  <section id="settings-installers" className="settings-card">
+                  <section id="settings-installers" tabIndex={-1} className="settings-card">
                     <div className="settings-card-head">
                       <PackageOpen size={20} />
                       <div>
@@ -3674,7 +3646,7 @@ export default function App() {
                     </div>
                   </section>
 
-                  <section id="settings-detection" className="settings-card">
+                  <section id="settings-detection" tabIndex={-1} className="settings-card">
                     <div className="settings-card-head">
                       <ScanSearch size={20} />
                       <div>
@@ -3745,7 +3717,7 @@ export default function App() {
                     </div>
                   </section>
 
-                  <section className="about-card">
+                  <section id="settings-about" tabIndex={-1} className="about-card">
                     <div className="brand-mark">
                       <img className="brand-logo-image" src={duskLogo} alt="" draggable={false} />
                     </div>

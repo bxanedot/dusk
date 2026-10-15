@@ -3000,3 +3000,24 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
 @media (prefers-reduced-motion: reduce) {
   .launcher-shell *, .launcher-shell *::before, .launcher-shell *::after { scroll-behavior: auto !important; transition: none !important; animation-duration: .01ms !important; }
 }
+.launcher-shell .settings-layout { grid-template-columns: 170px minmax(0, 1fr); gap: 24px; }
+.launcher-shell .settings-nav { border: 0; border-radius: 0; background: transparent; padding: 0; gap: 4px; top: 24px; }
+.launcher-shell .settings-nav-heading { font-size: 10px; color: var(--muted); }
+.launcher-shell .settings-nav-item { font-size: 12px; min-height: 38px; padding: 9px 12px; border-radius: 5px; }
+.launcher-shell .settings-nav-item.active { background: var(--accent-soft); color: var(--text); box-shadow: inset 3px 0 var(--accent); }
+.launcher-shell .settings-card { border-radius: 8px; padding: 22px; margin-bottom: 20px; }
+.launcher-shell .settings-card-head h3 { font-size: 17px; }
+.launcher-shell .settings-card-head p { color: var(--muted); font-size: 12px; line-height: 1.6; }
+.launcher-shell .setting-row { min-height: 80px; padding: 14px 0; gap: 18px; flex-wrap: wrap; }
+.launcher-shell .setting-row > div:first-child { flex: 1 1 180px; }
+.launcher-shell .setting-row strong { font-size: 13px; }
+.launcher-shell .setting-row span { color: var(--muted); font-size: 12px; line-height: 1.6; }
+.launcher-shell .setting-row > button, .launcher-shell .setting-row .segmented, .launcher-shell .accent-options { flex-shrink: 0; }
+.launcher-shell .segmented button { font-size: 12px; padding: 8px 11px; }
+.launcher-shell .settings-note, .launcher-shell .scanner-list span, .launcher-shell .data-path span { font-size: 12px; color: var(--muted); line-height: 1.6; }
+.launcher-shell .about-card { border-radius: 8px; }
+.launcher-shell .settings-content [id] { scroll-margin-top: 24px; }
+@media (max-width: 1250px) {
+  .launcher-shell .settings-layout { grid-template-columns: 145px minmax(0, 1fr); gap: 18px; }
+  .launcher-shell .settings-card { padding: 18px; }
+}
