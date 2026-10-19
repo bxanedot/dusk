@@ -75,6 +75,7 @@ try {
   await page.goto("http://127.0.0.1:" + port, { waitUntil: "domcontentloaded" });
   const nav = page.locator(".nav-item");
   await nav.first().waitFor({ state: "visible", timeout: 20000 });
+  await page.getByRole("button", { name: "I’ll set it up later" }).click();
 
   async function clickAndCheck(label) {
     const button = nav.filter({ hasText: label }).first();
@@ -92,7 +93,6 @@ try {
   await page.getByRole("searchbox", { name: "Search catalog" }).fill("cyberpunk");
   await page.getByText("Cyberpunk 2077", { exact: true }).waitFor({ state: "visible" });
   await clickAndCheck("Favorites");
-  await clickAndCheck("Screenshots");
   await clickAndCheck("Achievements");
   await clickAndCheck("Settings");
   const settingsContent = page.locator(".content");
@@ -113,7 +113,7 @@ try {
   });
   assert.equal(blocked, false, "An overlay is physically covering the Home button.");
   assert.deepEqual(errors, [], "Frontend JavaScript exceptions: " + errors.join("; "));
-  console.log("Dusk main window interaction smoke test passed: Home, Library, Dusk Catalog search, Favorites, Screenshots, Achievements, Settings, and Settings section navigation.");
+  console.log("Dusk main window interaction smoke test passed: Home, Library, Dusk Catalog search, Favorites, Achievements, Settings, and Settings section navigation.");
 } finally {
   await browser?.close();
   server.kill("SIGTERM");

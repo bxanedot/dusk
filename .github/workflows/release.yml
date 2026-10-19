@@ -112,7 +112,14 @@ jobs:
           awk '/^## 1\.0\.0 / { found=1; next } found && /^## / { exit } found { print }' CHANGELOG.md > release-notes.md
           test -s release-notes.md
           version="${RELEASE_TAG#dusk-v}"
-          gh release create "$RELEASE_TAG" release-assets/* \
+          if ! gh release view "$RELEASE_TAG" --repo "$REPO_FULL_NAME" >/dev/null 2>&1; then
+            gh release create "$RELEASE_TAG" \
+              --repo "$REPO_FULL_NAME" \
+              --title "Dusk v$version" \
+              --notes-file release-notes.md
+          fi
+          mapfile -d '' assets < <(find release-assets -type f -print0)
+          test "${#assets[@]}" -gt 0
+          gh release upload "$RELEASE_TAG" "${assets[@]}" \
             --repo "$REPO_FULL_NAME" \
-            --title "Dusk v$version" \
-            --notes-file release-notes.md
+            --clobber
