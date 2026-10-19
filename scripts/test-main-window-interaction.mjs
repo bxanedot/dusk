@@ -53,6 +53,9 @@ try {
         // a native account-scope command is slow or unavailable.
         if (command === "set_account_scope") return await new Promise(() => {});
         if (command === "get_stats") return stats;
+        if (command === "steam_achievement_status") return {
+          steamId: null, apiKeyConfigured: false, lastScanAt: null,
+        };
         if (command === "list_trainer_catalog") return [{
           title: "Cyberpunk 2077", platforms: ["Steam"],
           cheatCount: 12, status: "available",
@@ -103,7 +106,7 @@ try {
     return !!content && content.scrollTop > previous;
   }, beforeSettingsJump);
   await clickAndCheck("Home");
-  await page.getByRole("button", { name: "Browse Dusk Catalog" }).waitFor({ state: "visible" });
+  await page.getByText("No tracked sessions yet", { exact: true }).waitFor({ state: "visible" });
   // Explicitly check the physical click target, not just DOM handler dispatch.
   const home = nav.filter({ hasText: "Home" }).first();
   const blocked = await home.evaluate(element => {
