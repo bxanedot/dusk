@@ -1,0 +1,34 @@
+node_modules/
+dist/
+.vite/
+*.log
+.DS_Store
+Thumbs.db
+
+# Rust / Tauri
+src-tauri/target/
+target/
+src-tauri/gen/
+
+# IDE
+.vscode/
+.idea/
+
+# Local runtime data
+*.db
+*.db-shm
+*.db-wal
+
+# Updater signing keys must never be committed
+.tauri-updater.key
+.tauri-updater.key.pub
+
+# Local environment / Supabase project config
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Generated Dusk branding assets
+src-tauri/installer/header.bmp
+src-tauri/installer/sidebar.bmp

@@ -1,0 +1,38 @@
+name: Brand Assets
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "brand/**"
+      - "src/assets/dusk-logo.svg"
+      - "scripts/prepare-brand.ps1"
+      - ".github/workflows/brand-assets.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync-brand-assets:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Dusk
+        uses: actions/checkout@v4
+
+      - name: Generate brand assets
+        shell: pwsh
+        run: ./scripts/prepare-brand.ps1
+
+      - name: Commit generated brand assets
+        shell: pwsh
+        run: |
+          git config user.name "bxane-dusk-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add -f src/assets/dusk-logo.png src/assets/dusk-logo-cyan.png src/assets/dusk-logo-red.png src-tauri/icons/dusk-logo.png src-tauri/icons/dusk-logo-violet.png src-tauri/icons/dusk-logo-cyan.png src-tauri/icons/dusk-logo-red.png src-tauri/icons/32x32.png src-tauri/icons/128x128.png src-tauri/icons/128x128@2x.png src-tauri/icons/icon.png src-tauri/icons/icon.ico src-tauri/installer/header.bmp src-tauri/installer/sidebar.bmp
+          if (git diff --cached --quiet) {
+            Write-Host "Brand assets are already in sync."
+            exit 0
+          }
+          git commit -m "Sync generated Dusk brand assets"
+          git push
