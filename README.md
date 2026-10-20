@@ -454,16 +454,7 @@ Contributions, forks, fixes, and feature work are welcome. See CONTRIBUTING.md.
 
 ## License
 
-Dusk uses the Dusk Open Code License (DOCL) v1.0.
-
-You may use, modify, fork, redistribute, and build on the code, including commercially. Public projects using a substantial portion of Dusk must credit bxane-dev and link back to the original source.
-
-- Author: https://github.com/bxanedot
-- Source: https://github.com/bxanedot/dusk
-
-See LICENSE for the full terms.
-
-DOCL is a custom open-code license and is not presented as an OSI-approved open-source license.
+Dusk is licensed under the GNU General Public License v3.0. See [LICENSE](LICENSE) for the complete terms.
 
 
 ### Windows process identity
