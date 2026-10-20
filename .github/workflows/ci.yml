@@ -23,7 +23,7 @@ jobs:
         with:
           workspaces: ./src-tauri -> target
       - name: Install frontend dependencies
-        run: npm install
+        run: npm ci
       - name: Test embedded browser link handling and ad blocking
         shell: pwsh
         run: |

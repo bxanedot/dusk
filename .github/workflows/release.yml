@@ -43,7 +43,7 @@ jobs:
             libssl-dev libwebkit2gtk-4.1-dev libxdo-dev librsvg2-dev wget
 
       - name: Install frontend dependencies
-        run: npm install
+        run: npm ci
 
       - name: Configure optional Windows signing
         if: runner.os == 'Windows'
@@ -109,9 +109,9 @@ jobs:
           RELEASE_TAG: ${{ github.ref_name }}
           REPO_FULL_NAME: ${{ github.repository }}
         run: |
-          awk '/^## 1\.0\.0 / { found=1; next } found && /^## / { exit } found { print }' CHANGELOG.md > release-notes.md
-          test -s release-notes.md
           version="${RELEASE_TAG#dusk-v}"
+          awk -v heading="## $version " 'index($0, heading) == 1 { found=1; next } found && /^## / { exit } found { print }' CHANGELOG.md > release-notes.md
+          test -s release-notes.md
           if ! gh release view "$RELEASE_TAG" --repo "$REPO_FULL_NAME" >/dev/null 2>&1; then
             gh release create "$RELEASE_TAG" \
               --repo "$REPO_FULL_NAME" \

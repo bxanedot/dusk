@@ -30,7 +30,8 @@
       }
     ],
     "security": {
-      "csp": null,
+      "csp": "default-src 'self'; base-uri 'none'; connect-src 'self' ipc: http://ipc.localhost https://cwfmizfkysdrsesuhkym.supabase.co; font-src 'self' data:; form-action 'self'; frame-ancestors 'none'; img-src 'self' asset: http://asset.localhost https://cwfmizfkysdrsesuhkym.supabase.co https://cdn.cloudflare.steamstatic.com data: blob:; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'",
+      "devCsp": "default-src 'self'; base-uri 'none'; connect-src 'self' ipc: http://ipc.localhost https://cwfmizfkysdrsesuhkym.supabase.co ws://127.0.0.1:1420; font-src 'self' data:; form-action 'self'; frame-ancestors 'none'; img-src 'self' asset: http://asset.localhost https://cwfmizfkysdrsesuhkym.supabase.co https://cdn.cloudflare.steamstatic.com data: blob:; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'",
       "assetProtocol": {
         "enable": true,
         "scope": [
