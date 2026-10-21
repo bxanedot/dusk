@@ -1,4 +1,5 @@
 import { createClient, type Session, type SupabaseClient, type User } from "@supabase/supabase-js";
+import { fallbackAccountProfile, withStartupFallback } from "./startupFallback";
 
 const DUSK_SUPABASE_URL = "https://cwfmizfkysdrsesuhkym.supabase.co";
 const DUSK_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_yB9lh3iBKpH-tBHFA9neNA_bcNnxbK4";
@@ -111,14 +112,18 @@ export async function currentDuskAccount(): Promise<DuskAccount | null> {
   if (error) throw error;
   const session = data.session;
   if (!session?.user) return null;
-  const profile = await loadAccountProfile(session.user);
+  const fallbackProfile = fallbackAccountProfile(session.user);
+  const [profile, avatarUrl] = await Promise.all([
+    withStartupFallback(loadAccountProfile(session.user), fallbackProfile, 900),
+    withStartupFallback(loadAvatarUrl(session.user), null, 900),
+  ]);
   return {
     user: session.user,
     session,
     username: profile.username,
     displayName: profile.displayName,
     email: session.user.email || "",
-    avatarUrl: await loadAvatarUrl(session.user),
+    avatarUrl,
   };
 }
 

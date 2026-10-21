@@ -15,6 +15,12 @@ import { api } from "./lib/api";
 
 type Mode = "login" | "register" | "forgot";
 
+function hydrateAccountStateInBackground() {
+  void hydrateAccountState().catch((error: unknown) => {
+    console.warn("Dusk cloud account hydration unavailable:", error);
+  });
+}
+
 function AccountWindowBar() {
   async function handleMouseDown(event: MouseEvent<HTMLElement>) {
     if (event.button !== 0) return;
@@ -47,7 +53,7 @@ function AccountWindowBar() {
           title="Minimize"
           onClick={() => void getCurrentWindow().minimize()}
         >
-          <Minus size={15} />
+          <Minus size={17} />
         </button>
         <button
           type="button"
@@ -56,7 +62,7 @@ function AccountWindowBar() {
           title="Maximize / restore"
           onClick={() => void getCurrentWindow().toggleMaximize()}
         >
-          <Square size={12} />
+          <Square size={14} />
         </button>
         <button
           type="button"
@@ -65,7 +71,7 @@ function AccountWindowBar() {
           title="Close"
           onClick={() => void getCurrentWindow().close()}
         >
-          <X size={15} />
+          <X size={18} />
         </button>
       </div>
     </header>
@@ -119,10 +125,8 @@ export default function AccountGate(props: { children: ReactNode }) {
           // Cloud hydration can be slow or never resolve on offline/filtered
           // networks. Do not make the entire main application unclickable
           // while waiting for an external service.
+          hydrateAccountStateInBackground();
           setAccount(existing);
-          void hydrateAccountState().catch((error: unknown) => {
-            console.warn("Dusk cloud account hydration unavailable:", error);
-          });
         } else {
           await api.setAccountScope(null);
         }
@@ -150,14 +154,14 @@ export default function AccountGate(props: { children: ReactNode }) {
         if (result.account) {
           localStorage.removeItem("dusk-account-mode");
           await api.setAccountScope(result.account.user.id);
-          await hydrateAccountState();
+          hydrateAccountStateInBackground();
           setAccount(result.account);
         }
       } else {
         const signedIn = await loginDuskAccount(username, password);
         localStorage.removeItem("dusk-account-mode");
         await api.setAccountScope(signedIn.user.id);
-        await hydrateAccountState();
+        hydrateAccountStateInBackground();
         setAccount(signedIn);
       }
     } catch (error) {

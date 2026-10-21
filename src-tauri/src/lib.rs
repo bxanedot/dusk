@@ -1678,7 +1678,7 @@ fn auto_apply_game_artwork(app: &AppHandle, connection: &Connection, game: &Disc
         .flatten();
 
     if let Some((Some(existing_path), Some(origin))) = existing.as_ref() {
-        if origin == "manual" && Path::new(existing_path).exists() {
+        if origin == "manual" && has_valid_existing_cover(Some(existing_path)) {
             return;
         }
     }
@@ -1737,6 +1737,17 @@ fn auto_apply_game_artwork(app: &AppHandle, connection: &Connection, game: &Disc
         }
     }
 
+    // Keep local artwork improvements possible above, but do not repeat network searches
+    // when a prior scan already found a usable cover.
+    if existing
+        .as_ref()
+        .and_then(|(path, _)| path.as_deref())
+        .map(|path| has_valid_existing_cover(Some(path)))
+        .unwrap_or(false)
+    {
+        return;
+    }
+
     // 3) Small local Cover AI: search/rank official store candidates only as fallback.
     if let Some(destination) = cover_ai_web_fallback(game, &covers_dir, &base) {
         let _ = connection.execute(
@@ -1755,7 +1766,31 @@ fn auto_apply_game_artwork(app: &AppHandle, connection: &Connection, game: &Disc
     }
 }
 
-fn find_best_executable(root: &Path, game_name: &str) -> Option<PathBuf> {
+fn has_valid_existing_cover(path: Option<&str>) -> bool {
+    path.map(Path::new).map(Path::is_file).unwrap_or(false)
+}
+
+#[cfg(test)]
+mod artwork_cache_tests {
+    use super::has_valid_existing_cover;
+    use std::env;
+
+    #[test]
+    fn only_existing_files_count_as_cached_artwork() {
+        assert!(!has_valid_existing_cover(None));
+        assert!(!has_valid_existing_cover(Some("missing-cover-test.jpg")));
+        let executable = env::current_exe().unwrap();
+        let executable_path = executable.to_string_lossy();
+        assert!(has_valid_existing_cover(Some(executable_path.as_ref())));
+    }
+}
+
+fn find_best_executable_bounded(
+    root: &Path,
+    game_name: &str,
+    started: Instant,
+    budget: Duration,
+) -> Option<PathBuf> {
     if !root.exists() {
         return None;
     }
@@ -1766,14 +1801,18 @@ fn find_best_executable(root: &Path, game_name: &str) -> Option<PathBuf> {
         .filter(|character| character.is_ascii_alphanumeric())
         .collect();
 
-    let mut candidates: Vec<(i64, PathBuf)> = Vec::new();
+    let mut best: Option<(i64, PathBuf)> = None;
 
     for entry in WalkDir::new(root)
         .max_depth(5)
         .follow_links(false)
         .into_iter()
         .filter_map(Result::ok)
+        .take(2000)
     {
+        if started.elapsed() >= budget {
+            break;
+        }
         if !entry.file_type().is_file() {
             continue;
         }
@@ -1840,98 +1879,6 @@ fn find_best_executable(root: &Path, game_name: &str) -> Option<PathBuf> {
             score += 10;
         }
 
-        candidates.push((score, path.to_path_buf()));
-    }
-
-    candidates
-        .into_iter()
-        .max_by_key(|(score, _)| *score)
-        .map(|(_, path)| path)
-}
-
-fn find_best_executable_bounded(
-    root: &Path,
-    game_name: &str,
-    started: Instant,
-    budget: Duration,
-) -> Option<PathBuf> {
-    if !root.exists() {
-        return None;
-    }
-
-    let normalized_name: String = game_name
-        .to_ascii_lowercase()
-        .chars()
-        .filter(|character| character.is_ascii_alphanumeric())
-        .collect();
-
-    let mut best: Option<(i64, PathBuf)> = None;
-
-    for entry in WalkDir::new(root)
-        .max_depth(4)
-        .follow_links(false)
-        .into_iter()
-        .filter_map(Result::ok)
-        .take(2000)
-    {
-        if started.elapsed() >= budget {
-            break;
-        }
-        if !entry.file_type().is_file() {
-            continue;
-        }
-
-        let path = entry.path();
-        if path
-            .extension()
-            .and_then(|value| value.to_str())
-            .map(|value| value.eq_ignore_ascii_case("exe"))
-            != Some(true)
-        {
-            continue;
-        }
-
-        let filename = path
-            .file_stem()
-            .and_then(|value| value.to_str())
-            .unwrap_or_default()
-            .to_ascii_lowercase();
-
-        let blocked = [
-            "unins",
-            "uninstall",
-            "crash",
-            "report",
-            "vc_redist",
-            "vcredist",
-            "dxsetup",
-            "setup",
-            "unitycrashhandler",
-            "dotnet",
-        ];
-        if blocked.iter().any(|word| filename.contains(word)) {
-            continue;
-        }
-
-        let normalized_file: String = filename
-            .chars()
-            .filter(|character| character.is_ascii_alphanumeric())
-            .collect();
-
-        let mut score = 100_i64 - entry.depth() as i64 * 8;
-        if !normalized_name.is_empty()
-            && (normalized_file.contains(&normalized_name)
-                || normalized_name.contains(&normalized_file))
-        {
-            score += 150;
-        }
-        if filename.contains("launcher") {
-            score -= 20;
-        }
-        if filename.contains("win64") || filename.contains("x64") {
-            score += 10;
-        }
-
         if best
             .as_ref()
             .map(|(current, _)| score > *current)
@@ -1942,6 +1889,55 @@ fn find_best_executable_bounded(
     }
 
     best.map(|(_, path)| path)
+}
+
+#[cfg(test)]
+mod bounded_executable_scan_tests {
+    use super::find_best_executable_bounded;
+    use std::{
+        env, fs,
+        path::Path,
+        time::{Duration, Instant, SystemTime, UNIX_EPOCH},
+    };
+
+    #[test]
+    fn finds_matching_executable_at_supported_depth_five() {
+        let unique = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let root = env::temp_dir().join(format!("dusk-exe-scan-{}-{unique}", std::process::id()));
+        let executable = root.join("one/two/three/four/Game.exe");
+        fs::create_dir_all(executable.parent().unwrap()).unwrap();
+        fs::write(&executable, b"").unwrap();
+
+        let found = find_best_executable_bounded(
+            &root,
+            "Game",
+            Instant::now(),
+            Duration::from_secs(2),
+        );
+        let _ = fs::remove_dir_all(&root);
+
+        assert_eq!(found.as_deref(), Some(executable.as_path()));
+    }
+
+    #[test]
+    fn stops_when_the_shared_scan_budget_is_exhausted() {
+        assert_eq!(
+            find_best_executable_bounded(
+                Path::new("."),
+                "Game",
+                Instant::now(),
+                Duration::ZERO,
+            ),
+            None,
+        );
+    }
+}
+
+fn find_best_executable(root: &Path, game_name: &str) -> Option<PathBuf> {
+    find_best_executable_bounded(root, game_name, Instant::now(), Duration::from_secs(12))
 }
 
 fn steam_roots() -> Vec<PathBuf> {
@@ -1960,6 +1956,8 @@ fn steam_roots() -> Vec<PathBuf> {
 fn scan_steam() -> (Vec<DiscoveredGame>, Vec<String>) {
     let mut games = Vec::new();
     let mut warnings = Vec::new();
+    let started = Instant::now();
+    let budget = Duration::from_secs(12);
     let mut libraries: HashSet<PathBuf> = HashSet::new();
 
     for root in steam_roots() {
@@ -1985,7 +1983,14 @@ fn scan_steam() -> (Vec<DiscoveredGame>, Vec<String>) {
 
     let mut seen_ids = HashSet::new();
 
-    for library in libraries {
+    'libraries: for library in libraries {
+        if started.elapsed() >= budget {
+            warnings.push(
+                "Steam executable discovery stopped at its 12-second safety limit; other launcher scans still completed."
+                    .into(),
+            );
+            break;
+        }
         let steamapps = library.join("steamapps");
         let entries = match fs::read_dir(&steamapps) {
             Ok(entries) => entries,
@@ -1993,6 +1998,13 @@ fn scan_steam() -> (Vec<DiscoveredGame>, Vec<String>) {
         };
 
         for entry in entries.filter_map(Result::ok) {
+            if started.elapsed() >= budget {
+                warnings.push(
+                    "Steam executable discovery stopped at its 12-second safety limit; other launcher scans still completed."
+                        .into(),
+                );
+                break 'libraries;
+            }
             let path = entry.path();
             let filename = path
                 .file_name()
@@ -2027,7 +2039,7 @@ fn scan_steam() -> (Vec<DiscoveredGame>, Vec<String>) {
             }
 
             let install_path = steamapps.join("common").join(&install_dir);
-            let exe_path = find_best_executable(&install_path, &title)
+            let exe_path = find_best_executable_bounded(&install_path, &title, started, budget)
                 .map(|value| value.to_string_lossy().into_owned());
 
             games.push(DiscoveredGame {

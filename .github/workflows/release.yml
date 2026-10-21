@@ -9,7 +9,20 @@ permissions:
   contents: read
 
 jobs:
+  preflight:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: lts/*
+      - name: Test release metadata validation
+        run: node --test scripts/test-release-preflight.cjs
+      - name: Validate release tag, app versions, and changelog
+        run: node scripts/release-preflight.mjs
+
   build:
+    needs: preflight
     strategy:
       fail-fast: false
       matrix:

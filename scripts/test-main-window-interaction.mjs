@@ -34,8 +34,10 @@ try {
   const context = await browser.newContext({ viewport: { width: 1500, height: 920 } });
   await context.addInitScript(() => {
     localStorage.setItem("dusk-account-mode", "guest");
-    localStorage.setItem("dusk-auto-scan", "false");
+    localStorage.setItem("dusk-auto-scan", "true");
     localStorage.setItem("dusk-windows-vpn-mode", "off");
+    window.__duskScanCalls = 0;
+    window.__duskLibraryReads = 0;
     const stats = {
       gameCount: 0, favoriteCount: 0, playedGameCount: 0,
       totalSeconds: 0, launchCount: 0, last7DaysSeconds: 0,
@@ -49,6 +51,19 @@ try {
       transformCallback: () => 1,
       unregisterCallback: () => {},
       invoke: async (command) => {
+        if (command === "list_games") window.__duskLibraryReads++;
+        if (command === "list_games" && !window.__duskInitialGamesLoaded) {
+          await new Promise(resolve => setTimeout(resolve, 4000));
+          window.__duskInitialGamesLoaded = true;
+          return [];
+        }
+        if (command === "scan_games") {
+          window.__duskScanCalls++;
+          return {
+            found: 0, added: 0, updated: 0, steamFound: 0, epicFound: 0,
+            gogFound: 0, riotFound: 0, emulatorFound: 0, deviceFound: 0, warnings: [],
+          };
+        }
         // Guest startup must not leave the account gate covering the app while
         // a native account-scope command is slow or unavailable.
         if (command === "set_account_scope") return await new Promise(() => {});
@@ -78,7 +93,17 @@ try {
   await page.goto("http://127.0.0.1:" + port, { waitUntil: "domcontentloaded" });
   const nav = page.locator(".nav-item");
   await nav.first().waitFor({ state: "visible", timeout: 20000 });
+  await page.waitForTimeout(2200);
+  assert.equal(
+    await page.evaluate(() => window.__duskScanCalls),
+    0,
+    "automatic discovery must wait until the initial library load finishes",
+  );
+  await page.waitForFunction(() => !document.querySelector(".loading-screen"), { timeout: 5000 });
   await page.getByRole("button", { name: "I’ll set it up later" }).click();
+  const readsBeforeHydration = await page.evaluate(() => window.__duskLibraryReads);
+  await page.evaluate(() => window.dispatchEvent(new Event("dusk-account-state-hydrated")));
+  await page.waitForFunction(previous => window.__duskLibraryReads > previous, readsBeforeHydration, { timeout: 700 });
 
   async function clickAndCheck(label) {
     const button = nav.filter({ hasText: label }).first();
@@ -107,6 +132,18 @@ try {
   }, beforeSettingsJump);
   await clickAndCheck("Home");
   await page.getByText("No tracked sessions yet", { exact: true }).waitFor({ state: "visible" });
+  const homePage = page.locator(".destination-content > .page");
+  assert.equal(
+    await homePage.evaluate(element => getComputedStyle(element).animationName),
+    "dusk-page-enter",
+    "route content should use the restrained page transition",
+  );
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  assert.equal(
+    await homePage.evaluate(element => getComputedStyle(element).animationName),
+    "none",
+    "page transition must be disabled for reduced motion",
+  );
   // Explicitly check the physical click target, not just DOM handler dispatch.
   const home = nav.filter({ hasText: "Home" }).first();
   const blocked = await home.evaluate(element => {

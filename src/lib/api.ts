@@ -1,4 +1,5 @@
-import { invoke } from "@tauri-apps/api/core";
+import { invoke as nativeInvoke } from "@tauri-apps/api/core";
+import { withAccountStateLock } from "./accountStateRestore";
 import type {
   CollectionMembership,
   CollectionRecord,
@@ -48,6 +49,18 @@ export type ManagedDownload = {
   listingUrl: string | null;
   source: "online-fix" | null;
 };
+
+const accountMutations = new Set([
+  "set_account_scope", "create_profile", "rename_profile", "set_active_profile", "delete_profile",
+  "add_manual_game",
+  "set_favorite", "rename_game", "remove_game", "merge_cloud_playtime",
+  "create_collection", "delete_collection", "set_collection_membership",
+]);
+
+function invoke<T>(command: string, args?: Record<string, unknown>): Promise<T> {
+  const operation = () => nativeInvoke<T>(command, args);
+  return accountMutations.has(command) ? withAccountStateLock(operation) : operation();
+}
 
 export const api = {
   setAccountScope: (userId: string | null) => invoke<void>("set_account_scope", { accountUserId: userId }),

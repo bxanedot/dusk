@@ -67,7 +67,8 @@ import { TrainerPanel } from "./components/TrainerPanel";
 import { ModManagerPanel } from "./components/ModManagerPanel";
 import { onlineCheatTableKey, type OnlineCheatTableSearchState } from "./components/OnlineCheatTableResults";
 import { api, type ManagedDownload, type OnlineFixHosterFile } from "./lib/api";
-import { syncAccountState } from "./lib/accountSync";
+import { ACCOUNT_STATE_HYDRATED_EVENT, syncAccountState } from "./lib/accountSync";
+import { exitAccountMode } from "./lib/accountMode";
 import { currentDuskAccount, logoutDuskAccount, type DuskAccount } from "./lib/auth";
 import { cloudSaveStatus, syncAllBackupsToSupabase, syncBackupToSupabase, syncCloudManifest } from "./lib/cloudSaves";
 import { checkForDuskUpdate, installDuskUpdate } from "./lib/updater";
@@ -1480,10 +1481,13 @@ export default function App() {
         void syncAccountState().catch(() => undefined);
       }
     };
+    const refreshHydratedState = () => { void refreshCore(false); };
     window.addEventListener("online", syncWhenOnline);
+    window.addEventListener(ACCOUNT_STATE_HYDRATED_EVENT, refreshHydratedState);
     return () => {
       window.clearInterval(syncTimer);
       window.removeEventListener("online", syncWhenOnline);
+      window.removeEventListener(ACCOUNT_STATE_HYDRATED_EVENT, refreshHydratedState);
     };
   }, [refreshCore]);
 
@@ -1584,7 +1588,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!autoScanEnabled) return;
+    if (!autoScanEnabled || loading) return;
 
     const run = () => void autoScanGames(false);
     const startup = window.setTimeout(run, 1200);
@@ -1607,7 +1611,7 @@ export default function App() {
       }
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [autoScanEnabled]);
+  }, [autoScanEnabled, loading]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -2522,7 +2526,7 @@ export default function App() {
             title="Minimize"
             onClick={() => void minimizeWindow()}
           >
-            <Minus size={15} />
+            <Minus size={17} />
           </button>
           <button
             className="window-control"
@@ -2530,7 +2534,7 @@ export default function App() {
             title={windowMaximized ? "Restore" : "Maximize"}
             onClick={() => void toggleWindowMaximize()}
           >
-            <Square size={12} />
+            <Square size={14} />
           </button>
           <button
             className="window-control close"
@@ -2538,7 +2542,7 @@ export default function App() {
             title="Hide to tray"
             onClick={() => void closeWindow()}
           >
-            <X size={15} />
+            <X size={18} />
           </button>
         </div>
       </header>
@@ -3270,11 +3274,8 @@ export default function App() {
                       <button
                         className="button secondary"
                         onClick={() => {
-                          localStorage.removeItem("dusk-account-mode");
-                          void api
-                            .setAccountScope(null)
-                            .then(() => (guestMode ? undefined : logoutDuskAccount()))
-                            .then(() => window.location.reload());
+                          void exitAccountMode(guestMode, logoutDuskAccount, () => window.location.reload())
+                            .catch(error => showToast(readableError(error), "error"));
                         }}
                       >
                         {guestMode ? "Sign in" : "Sign out"}

@@ -2,6 +2,13 @@
 
 All notable Dusk changes are documented here.
 
+## [Unreleased]
+
+- Restore cached local sessions while cloud account state loads, with a local identity fallback when the account service is unavailable.
+- Reuse valid cached artwork instead of repeating lookups, and bound Steam executable discovery.
+- Add reduced-motion-aware page transitions and larger, clearer desktop window controls.
+- Check release tag, app versions, and release notes before platform builds start.
+
 ## 1.0.0 - 2026-10-19
 
 Dusk 1.0.0 brings the launcher, library, mod tools, and account sync together in one desktop app.

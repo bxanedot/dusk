@@ -5,7 +5,14 @@ import type { CloudSaveStatus, SaveBackupRecord } from "../types";
 
 let authPromise: Promise<{ client: SupabaseClient; userId: string; accessToken: string }> | null = null;
 
+function requireAccountMode() {
+  if (localStorage.getItem("dusk-account-mode") === "guest") {
+    throw new Error("Sign in to your Dusk account to use cloud saves.");
+  }
+}
+
 async function ensureCloudIdentity() {
+  requireAccountMode();
   if (authPromise) return authPromise;
 
   authPromise = (async () => {
@@ -16,6 +23,7 @@ async function ensureCloudIdentity() {
 
     const existing = await supabase.auth.getSession();
     if (existing.error) throw existing.error;
+    requireAccountMode();
 
     const session = existing.data.session;
 
