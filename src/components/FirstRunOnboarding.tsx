@@ -23,7 +23,6 @@ export function FirstRunOnboarding(props: {
           <img src={duskLogo} alt="" draggable={false} />
           <span>DUSK</span>
         </div>
-        <span className="eyebrow">Your library starts here</span>
         <h1 id="onboarding-title">Welcome to Dusk.</h1>
         <p className="onboarding-copy">Bring your installed games together, then manage their saves, mods, and playtime from one place.</p>
         <div className="onboarding-actions">

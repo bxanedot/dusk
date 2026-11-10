@@ -64,7 +64,6 @@ export function NameEditDialog(props: {
       >
         <div className="modal-head">
           <div>
-            <span className="eyebrow">Dusk</span>
             <h2 id="name-edit-title">{props.title}</h2>
             <p>{props.description}</p>
           </div>

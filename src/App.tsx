@@ -50,6 +50,7 @@ import { SettingsNavigation } from "./components/SettingsNavigation";
 import { FirstRunOnboarding } from "./components/FirstRunOnboarding";
 import { NameEditDialog } from "./components/NameEditDialog";
 import { GameRail } from "./components/GameRail";
+import { HomeHero } from "./components/HomeHero";
 import duskLogo from "./assets/dusk-logo.svg";
 import bxaneWebsiteIcon from "./assets/bxane.lol.svg";
 import gunsLolIcon from "./assets/guns_lol_icon.svg";
@@ -380,7 +381,6 @@ function AddGameModal(props: {
       >
         <div className="modal-head">
           <div>
-            <span className="eyebrow">Manual library entry</span>
             <h2>Add game</h2>
           </div>
           <button type="button" className="icon-button" onClick={props.onClose}>
@@ -1040,7 +1040,6 @@ export default function App() {
   }, []);
 
   const [view, setViewState] = useState<View>("home");
-  const [railCollapsed, setRailCollapsed] = useState(false);
   const setView = useCallback((next: View) => {
     setSelectedGameId(null);
     setWebSearched(false);
@@ -1819,7 +1818,7 @@ export default function App() {
       }
 
       const fallback = Array.from(document.querySelectorAll<HTMLElement>(
-        ".game-rail-item, .game-rail-library, .nav-item",
+        ".game-rail-item, .nav-item",
       )).find((element) => element.isConnected && element.getClientRects().length > 0 && !element.matches(":disabled"));
       fallback?.focus({ preventScroll: true });
     });
@@ -1865,6 +1864,9 @@ export default function App() {
       )
       .slice(0, 6);
   }, [games]);
+
+  const heroGame = recentGames[0];
+  const homeGames = recentGames.length > 1 ? recentGames.slice(1) : games.filter((game) => game.id !== heroGame?.id).slice(0, 6);
 
   const favoriteGames = useMemo(() => games.filter((game) => game.favorite).slice(0, 6), [games]);
 
@@ -2547,20 +2549,16 @@ export default function App() {
         </div>
       </header>
 
-      <div className={cx("app-shell", "launcher-shell", railCollapsed && "rail-collapsed", consoleMode && "console-mode", controllerConnected && "controller-connected")}>
+      <div className={cx("app-shell", "launcher-shell", consoleMode && "console-mode", controllerConnected && "controller-connected")}>
       <aside className="sidebar">
         <div className="brand">
           <div className="brand-mark">
             <img className="brand-logo-image" src={duskLogo} alt="" draggable={false} />
           </div>
-          <div>
-            <strong>Dusk</strong>
-            <span>Game + mod manager</span>
-          </div>
+          <strong>Dusk</strong>
         </div>
 
         <nav className="nav-list" aria-label="Main navigation">
-          <span className="sidebar-nav-label">Start</span>
           <NavItem
             active={view === "home"}
             icon={<Home size={18} />}
@@ -2569,7 +2567,6 @@ export default function App() {
               setView("home");
             }}
           />
-          <span className="sidebar-nav-label">Play</span>
           <NavItem
             active={view === "library"}
             icon={<Library size={18} />}
@@ -2598,7 +2595,6 @@ export default function App() {
               void loadTrainerCatalog().catch(() => {});
             }}
           />
-          <span className="sidebar-nav-label">Activity</span>
           <NavItem
             active={view === "achievements"}
             icon={<Trophy size={18} />}
@@ -2606,6 +2602,8 @@ export default function App() {
             onClick={() => setView("achievements")}
           />
         </nav>
+
+        <GameRail games={games} selectedGameId={selectedGameId} onSelectGame={openGame} />
 
         <div className="sidebar-bottom">
           {!guestMode && accountIdentity && (
@@ -2628,35 +2626,15 @@ export default function App() {
               </div>
             </button>
           )}
-          <button className="creator-pill" onClick={() => void openExternal("site")} title="Open bxane.lol">
-            <img className="creator-brand-icon creator-website-icon" src={bxaneWebsiteIcon} alt="" draggable={false} />
-            <span>bxane.lol</span>
-            <small>Personal website</small>
-            <ExternalLink size={12} />
-          </button>
-          <button className="creator-pill creator-pill-guns" onClick={() => void openExternal("creator")} title="Open guns.lol/bxane">
-            <img className="creator-brand-icon" src={gunsLolIcon} alt="" draggable={false} />
-            <span>guns.lol</span>
-            <small>guns.lol/bxane</small>
-            <ExternalLink size={12} />
-          </button>
           <NavItem
             active={view === "settings"}
             icon={<Settings size={18} />}
             label="Settings"
             onClick={() => setView("settings")}
           />
-          <div className="local-chip">
-            <HardDrive size={14} />
-            <span>Local-first</span>
-          </div>
         </div>
       </aside>
 
-      <GameRail games={games} selectedGameId={selectedGameId} collapsed={railCollapsed}
-        onToggleCollapsed={() => setRailCollapsed(value => !value)}
-        onSelectGame={openGame}
-        onOpenLibrary={() => setView("library")} />
       <main className="main">
         <header className="topbar">
           <div className="search-controls">
@@ -2944,11 +2922,19 @@ export default function App() {
 
               {view === "home" && (
                 <div className="page">
+                  {heroGame && (
+                    <HomeHero
+                      game={heroGame}
+                      meta={[sourceLabel(heroGame.source), formatDuration(heroGame.totalSeconds) + " played", "Last played " + formatDate(heroGame.lastPlayed)].join(" · ")}
+                      playing={playingId === heroGame.id}
+                      onPlay={() => void play(heroGame)}
+                      onOpen={() => openGame(heroGame.id)}
+                    />
+                  )}
                   <section className="content-section">
                     <div className="section-heading">
                       <div>
-                        <span className="eyebrow">Continue</span>
-                        <h2>{recentGames.length ? "Recently played" : "Your library"}</h2>
+                        <h2>{recentGames.length > 1 ? "Recently Played" : "Your Library"}</h2>
                       </div>
                       <button
                         className="text-action"
@@ -2974,7 +2960,7 @@ export default function App() {
                       />
                     ) : (
                       <div className="game-grid">
-                        {(recentGames.length ? recentGames : games.slice(0, 6)).map((game) => (
+                        {homeGames.map((game) => (
                           <GameCard
                             key={game.id}
                             game={game}
@@ -2992,7 +2978,6 @@ export default function App() {
                     <section className="content-section">
                       <div className="section-heading">
                         <div>
-                          <span className="eyebrow">Pinned</span>
                           <h2>Favorites</h2>
                         </div>
                       </div>
@@ -3035,9 +3020,6 @@ export default function App() {
                 <div className="page">
                   <div className="page-heading">
                     <div>
-                      <span className="eyebrow">
-                        Games
-                      </span>
                       <h1>{libraryTitle}</h1>
                       <p>
                         {visibleGames.length} {visibleGames.length === 1 ? "game" : "games"} shown
@@ -3115,7 +3097,6 @@ export default function App() {
                 <div className="page">
                   <div className="page-heading achievement-page-heading">
                     <div>
-                      <span className="eyebrow">Steam</span>
                       <h1>Achievements</h1>
                       <p>Real game achievements, checked while online and synced with your Dusk account.</p>
                     </div>
@@ -3196,7 +3177,6 @@ export default function App() {
                 <div className="page settings-page">
                   <div className="page-heading">
                     <div>
-                      <span className="eyebrow">Dusk</span>
                       <h1>Settings</h1>
                       <p>Account, profiles, appearance, updates, and local data.</p>
                     </div>
