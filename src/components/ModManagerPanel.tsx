@@ -1,4 +1,4 @@
-import { Download, FolderOpen, FolderPlus, PackageCheck, Plus, Search, Trash2 } from "lucide-react";
+import { Download, FolderOpen, FolderPlus, PackageCheck, Plus, Search, Trash2 } from "../icons";
 import { useEffect, useRef, useState } from "react";
 import { api } from "../lib/api";
 import { NameEditDialog } from "./NameEditDialog";

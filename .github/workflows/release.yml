@@ -33,6 +33,9 @@ jobs:
           - os: ubuntu-24.04
             bundles: deb,appimage
             artifact: dusk-linux
+          - os: macos-latest
+            bundles: dmg
+            artifact: dusk-macos
     runs-on: ${{ matrix.os }}
     env:
       VITE_SUPABASE_URL: ${{ vars.DUSK_SUPABASE_URL }}
@@ -103,6 +106,14 @@ jobs:
           path: |
             src-tauri/target/release/bundle/deb/*.deb
             src-tauri/target/release/bundle/appimage/*.AppImage
+          if-no-files-found: error
+
+      - name: Upload macOS disk image
+        if: runner.os == 'macOS'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: src-tauri/target/release/bundle/dmg/*.dmg
           if-no-files-found: error
 
   publish:

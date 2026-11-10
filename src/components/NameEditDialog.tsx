@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { X } from "lucide-react";
+import { X } from "../icons";
 
 export function NameEditDialog(props: {
   title: string;
@@ -64,7 +64,6 @@ export function NameEditDialog(props: {
       >
         <div className="modal-head">
           <div>
-            <span className="eyebrow">Dusk</span>
             <h2 id="name-edit-title">{props.title}</h2>
             <p>{props.description}</p>
           </div>

@@ -34,7 +34,7 @@ export type OnlineFixHosterFile = {
   requiresCaution: boolean;
 };
 
-export type GameArchiveBundle = { label: string; parts: Array<{ filename: string; mirrors: string[] }> };
+type GameArchiveBundle = { label: string; parts: Array<{ filename: string; mirrors: string[] }> };
 
 export type ManagedDownload = {
   id: string;

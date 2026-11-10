@@ -24,6 +24,8 @@ async function applyDuskWindowIcon() {
 }
 
 void applyDuskWindowIcon();
+// macOS draws its own traffic-light window buttons (see tauri.macos.conf.json).
+if (navigator.userAgent.includes("Mac")) document.documentElement.dataset.platform = "mac";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

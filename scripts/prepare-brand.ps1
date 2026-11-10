@@ -195,19 +195,10 @@ function Save-Sidebar([string]$path) {
 
 $violetStart = [System.Drawing.Color]::FromArgb(180, 92, 255)
 $violetEnd = [System.Drawing.Color]::FromArgb(86, 35, 214)
-$cyanStart = [System.Drawing.Color]::FromArgb(82, 246, 255)
-$cyanEnd = [System.Drawing.Color]::FromArgb(0, 167, 215)
-$redStart = [System.Drawing.Color]::FromArgb(255, 95, 112)
-$redEnd = [System.Drawing.Color]::FromArgb(211, 19, 66)
 
 Save-CrescentPng (Join-Path $iconsDir "dusk-logo.png") 512 $violetStart $violetEnd
-Save-CrescentPng (Join-Path $iconsDir "dusk-logo-violet.png") 512 $violetStart $violetEnd
-Save-CrescentPng (Join-Path $iconsDir "dusk-logo-cyan.png") 512 $cyanStart $cyanEnd
-Save-CrescentPng (Join-Path $iconsDir "dusk-logo-red.png") 512 $redStart $redEnd
 
 Save-CrescentPng (Join-Path $uiAssetsDir "dusk-logo.png") 512 $violetStart $violetEnd
-Save-CrescentPng (Join-Path $uiAssetsDir "dusk-logo-cyan.png") 512 $cyanStart $cyanEnd
-Save-CrescentPng (Join-Path $uiAssetsDir "dusk-logo-red.png") 512 $redStart $redEnd
 
 Save-CrescentPng (Join-Path $iconsDir "32x32.png") 32 $violetStart $violetEnd
 Save-CrescentPng (Join-Path $iconsDir "128x128.png") 128 $violetStart $violetEnd

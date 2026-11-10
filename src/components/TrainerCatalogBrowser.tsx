@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, ExternalLink, Gamepad2, LoaderCircle, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, ExternalLink, Gamepad2, LoaderCircle, Search } from "../icons";
 import { type FormEvent } from "react";
 import type { OnlineCheatTableResult, TrainerCatalogResult } from "../types";
 import { OnlineCheatTableResults, type OnlineCheatTableSearchState } from "./OnlineCheatTableResults";
@@ -107,7 +107,6 @@ export function TrainerCatalogBrowser(props: TrainerCatalogBrowserProps) {
     <div className="page trainer-catalog-page">
       <div className="page-heading trainer-catalog-page-heading">
         <div>
-          <span className="eyebrow">Browse</span>
           <h1>Dusk Catalog</h1>
           <p>Select a title to open its game details. Add or scan the game in Dusk's library first to reach its local trainer controls.</p>
         </div>

@@ -1,5 +1,5 @@
 import { type FormEvent, type MouseEvent, type ReactNode, useEffect, useRef, useState } from "react";
-import { ArrowLeft, KeyRound, LockKeyhole, LogIn, Mail, Minus, Square, UserRound, UserPlus, X } from "lucide-react";
+import { ArrowLeft, KeyRound, LockKeyhole, LogIn, Mail, Minus, Square, UserRound, UserPlus, X } from "./icons";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import duskLogo from "./assets/dusk-logo.svg";
 import {
