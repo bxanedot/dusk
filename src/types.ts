@@ -105,14 +105,6 @@ export interface PlatformAchievementScanResult {
   skippedRecently: boolean;
 }
 
-export interface ScreenshotRecord {
-  id: number;
-  gameId: string;
-  path: string;
-  dataUrl: string | null;
-  createdAt: string;
-}
-
 export interface CollectionRecord {
   id: string;
   name: string;
@@ -122,14 +114,6 @@ export interface CollectionRecord {
 export interface CollectionMembership {
   collectionId: string;
   gameId: string;
-}
-
-export interface AutoScreenshotScanResult {
-  found: number;
-  imported: number;
-  steamImported: number;
-  matchedImported: number;
-  skippedDuplicates: number;
 }
 
 export interface SaveConfig {

@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 
-export interface UpdateCheckResult {
+interface UpdateCheckResult {
   available: boolean;
   version?: string;
   body?: string | null;

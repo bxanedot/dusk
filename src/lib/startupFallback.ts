@@ -1,4 +1,4 @@
-export type StartupAccountProfile = {
+type StartupAccountProfile = {
   username: string;
   displayName: string;
 };
