@@ -1,0 +1,24 @@
+{
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Dusk",
+        "width": 1500,
+        "height": 920,
+        "minWidth": 1100,
+        "minHeight": 700,
+        "resizable": true,
+        "fullscreen": false,
+        "backgroundColor": "#1c1c1e",
+        "center": true,
+        "decorations": true,
+        "maximizable": true,
+        "minimizable": true,
+        "closable": true,
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true
+      }
+    ]
+  }
+}

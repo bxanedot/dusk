@@ -6,7 +6,7 @@ Dusk is a local-first desktop game and mod manager built with Tauri, Rust, React
 
 It scans real local game installations, launches games, tracks sessions it can observe, and keeps the library database on the user's PC. Dusk does not ship with fake games or seeded playtime.
 
-Windows installers include automatic game scanning, provider launching, process-based playtime tracking, and mod deployment. Linux packages are available for manual game entries and direct launching; automatic scanning, provider launching, process-based playtime tracking, mod deployment, Riot support, and memory trainers are currently Windows-only.
+Windows installers include automatic game scanning, provider launching, process-based playtime tracking, and mod deployment. Linux packages and the macOS disk image are available for manual game entries and direct launching; automatic scanning, provider launching, process-based playtime tracking, mod deployment, Riot support, and memory trainers are currently Windows-only.
 
 The in-app Dusk Catalog includes 3,510 unique game trainer listings and works offline. Search titles, compare platform support, and review availability details.
 
@@ -74,7 +74,7 @@ does not bypass source login, authorization, or download-host restrictions.
 - Hidden background Windows scan helpers with no flashing terminal windows
 - Safe local installer hub for user-selected EXE/MSI installers
 - Official store shortcuts for Steam, Epic Games, GOG, and itch.io
-- Clickable bxane creator pill linking to https://guns.lol/bxane
+- Creator links in Settings › About
 - Physical per-owner save-file vaults for each configured game
 - Manual game entries for any local Windows executable
 - Native game launching
