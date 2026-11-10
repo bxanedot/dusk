@@ -2,7 +2,7 @@
 
 Dusk is a local-first desktop game and mod manager built with Tauri, Rust, React, TypeScript, and SQLite.
 
-**Current version: 1.0.0**
+**Current version: 2.0.0**
 
 It scans real local game installations, launches games, tracks sessions it can observe, and keeps the library database on the user's PC. Dusk does not ship with fake games or seeded playtime.
 

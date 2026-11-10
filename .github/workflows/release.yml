@@ -140,8 +140,10 @@ jobs:
             gh release create "$RELEASE_TAG" \
               --repo "$REPO_FULL_NAME" \
               --title "Dusk v$version" \
+              --latest \
               --notes-file release-notes.md
           fi
+          (cd release-assets && sha256sum -- * > SHA256SUMS.txt)
           mapfile -d '' assets < <(find release-assets -type f -print0)
           test "${#assets[@]}" -gt 0
           gh release upload "$RELEASE_TAG" "${assets[@]}" \

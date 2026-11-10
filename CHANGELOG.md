@@ -4,6 +4,17 @@ All notable Dusk changes are documented here.
 
 ## [Unreleased]
 
+## 2.0.0 - 2026-11-10
+
+Dusk 2.0.0 looks and feels like a Mac app. Home now opens on the game you played last, every icon is an SF Symbol from GlyphStudio, and macOS gets its own disk image alongside the Windows and Linux installers.
+
+- Open Home on a "Jump back in" banner for the last game played, with Play and Details right there.
+- Move the game list into the sidebar, which now works like a Mac source list.
+- Use Apple's dark system colors, the system font and capsule buttons. The macOS window uses native traffic lights.
+- Draw every icon with SF Symbols from GlyphStudio.
+- Build and test on Windows, Linux and macOS in CI, and add a macOS disk image to releases.
+- Publish SHA-256 checksums for every installer.
+- Remove dead screenshot code, unused types, unused logo variants and about 540 lines of unused styles.
 - Restore cached local sessions while cloud account state loads, with a local identity fallback when the account service is unavailable.
 - Reuse valid cached artwork instead of repeating lookups, and bound Steam executable discovery.
 - Add reduced-motion-aware page transitions and larger, clearer desktop window controls.

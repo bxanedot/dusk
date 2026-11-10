@@ -1,6 +1,6 @@
 [package]
 name = "dusk"
-version = "1.0.0"
+version = "2.0.0"
 description = "Dusk local-first game and mod manager by bxane"
 authors = ["bxane"]
 edition = "2021"
