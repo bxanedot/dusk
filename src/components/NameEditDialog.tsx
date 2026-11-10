@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { X } from "lucide-react";
+import { X } from "../icons";
 
 export function NameEditDialog(props: {
   title: string;

@@ -1,4 +1,4 @@
-import { Check, ChevronLeft, ChevronRight, ExternalLink, Gamepad2, LoaderCircle, Search, Upload, Zap } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, ExternalLink, Gamepad2, LoaderCircle, Search, Upload, Zap } from "../icons";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import type { CheatTable, OnlineCheatTableResult } from "../types";
 import { api } from "../lib/api";

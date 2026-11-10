@@ -1,5 +1,5 @@
 import { type ChangeEvent, type FormEvent, useEffect, useRef, useState } from "react";
-import { Camera, KeyRound, Mail, Save, ShieldCheck, Trash2, UserRound } from "lucide-react";
+import { Camera, KeyRound, Mail, Save, ShieldCheck, Trash2, UserRound } from "./icons";
 import {
   currentDuskAccount,
   removeDuskAvatar,

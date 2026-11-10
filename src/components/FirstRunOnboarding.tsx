@@ -1,4 +1,4 @@
-import { Cloud, Library, Plus, ScanSearch, X } from "lucide-react";
+import { Cloud, Library, Plus, ScanSearch, X } from "../icons";
 import duskLogo from "../assets/dusk-logo.svg";
 
 export function FirstRunOnboarding(props: {

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
-import { ChevronLeft, ChevronRight, Library } from "lucide-react";
+import { ChevronLeft, ChevronRight, Library } from "../icons";
 import type { GameRecord } from "../types";
 
 interface GameRailProps {

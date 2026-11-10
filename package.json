@@ -11,16 +11,16 @@
     "prebuild": "npm run brand:prepare",
     "build": "tsc && vite build",
     "preview": "vite preview",
+    "test": "node --test \"scripts/test-*.cjs\" scripts/test-account-gate-startup.mjs",
+    "glyphs": "node scripts/sync-glyphs.mjs ../GlyphStudio src/glyph-names.json src/glyphs.ts",
     "pretauri": "npm run brand:prepare",
     "tauri": "tauri"
   },
   "dependencies": {
+    "@supabase/supabase-js": "2.117.2",
     "@tauri-apps/api": "^2.0.0",
-    "lucide-react": "^0.468.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "@tauri-apps/plugin-updater": "2.12.0",
-    "@supabase/supabase-js": "2.117.2"
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.0.0",

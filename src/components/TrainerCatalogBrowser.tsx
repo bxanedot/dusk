@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, ExternalLink, Gamepad2, LoaderCircle, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, ExternalLink, Gamepad2, LoaderCircle, Search } from "../icons";
 import { type FormEvent } from "react";
 import type { OnlineCheatTableResult, TrainerCatalogResult } from "../types";
 import { OnlineCheatTableResults, type OnlineCheatTableSearchState } from "./OnlineCheatTableResults";

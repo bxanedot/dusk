@@ -1,4 +1,4 @@
-import { Gamepad2, LoaderCircle, Search } from "lucide-react";
+import { Gamepad2, LoaderCircle, Search } from "../icons";
 import type { TrainerCatalogResult } from "../types";
 
 export type TrainerCatalogPanelState = "idle" | "loading" | "error" | "empty" | "results";

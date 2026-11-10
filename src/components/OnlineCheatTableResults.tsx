@@ -1,4 +1,4 @@
-import { Download, FileCode2, LoaderCircle, Star } from "lucide-react";
+import { Download, FileCode2, LoaderCircle, Star } from "../icons";
 import type { OnlineCheatTableResult } from "../types";
 
 export type OnlineCheatTableSearchState = "idle" | "loading" | "empty" | "error" | "results";

@@ -33,7 +33,7 @@ import {
   Trophy,
   UserRound,
   X,
-} from "lucide-react";
+} from "./icons";
 import {
   type FormEvent,
   type MouseEvent,
