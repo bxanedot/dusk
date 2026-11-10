@@ -143,6 +143,9 @@ jobs:
               --latest \
               --notes-file release-notes.md
           fi
+          # Artifacts keep their bundle subfolders (deb/, appimage/); flatten them before hashing and upload.
+          find release-assets -mindepth 2 -type f -exec mv -t release-assets {} +
+          find release-assets -mindepth 1 -type d -delete
           (cd release-assets && sha256sum -- * > SHA256SUMS.txt)
           mapfile -d '' assets < <(find release-assets -type f -print0)
           test "${#assets[@]}" -gt 0
